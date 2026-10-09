@@ -1,0 +1,5 @@
+Career Lab. Copyright (c) 2026. All rights reserved.
+
+The content, questions, scenarios, design and code of Career Lab are original works.
+You may use the website for your own learning. You may not copy, scrape, republish,
+resell or build a product from its content or code without written permission.
