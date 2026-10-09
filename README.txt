@@ -1,33 +1,26 @@
-CAREER LAB - WEBSITE
-====================
-Learn. Practice. Prepare. Perform.
-
+CAREER LAB (website) - learn, practise, prepare, perform
+=========================================================
 HOW TO RUN
-1. Easiest (works with voice): upload this folder to GitHub Pages, Netlify or any HTTPS host and open the link in Chrome or Edge.
-2. On a computer: run "python3 -m http.server 8000" inside this folder and open http://localhost:8000
-   (Opening index.html by double-click works for most things, but the microphone and code sandbox need http://localhost or https.)
+  Easiest: unzip, double-click index.html (Chrome or Edge).
+  For voice input on some browsers use a local server:  python3 -m http.server   then open http://localhost:8000
+  Host it anywhere static (GitHub Pages, Netlify). No build step, no internet needed (fonts are bundled).
 
 WHAT IS INSIDE
-- Learn: 12 topics, each with a story, the idea, an example, a tip, a quiz and an "Explain it" answer.
-- Answer by VOICE (mic button, speech to text) or by typing. Every answer gets a score for
-  knowledge, confidence, reasoning and clarity, with the ideas you covered and missed.
-- Interview Rescue: Hint (3 levels), "I don't know" (a safe way to answer), "Help me explain" (answer structure).
-- Interview: practice questions by level, plus a Mock interview built from your resume and job description,
-  with adaptive follow-up questions and a final report.
-- Career studio: upload/paste resume (.docx, .txt), score, improvements and a better version;
-  paste a job description; Resume vs JD match (strong / practice / priority skills).
-- Practice: Rapid fire, Fix the incident, Spot the bug, Order it, Match it, Code lab (JavaScript with tests).
-- Progress: XP, levels, streaks, badges, readiness rings, export/import, dark and light theme, voice language.
+  11 fields (IT and Non-IT), 41 topics, 276 key terms, a real-time scenario with a step-by-step correct approach in every topic,
+  61+ interview questions (HR, behavioural, situational, technical), generated quizzes that avoid repeats,
+  resume upload (.docx/.txt/paste) -> score, editable skills, learning path, 7-day plan, project interview, claims check,
+  job-description match, mock interview with adaptive follow-ups, speaking lab (read aloud, self-introduction, coach),
+  flashcards, order/match games, code lab, badges, progress export.
+
+VOICE
+  Uses the browser speech recognition (Chrome/Edge). The transcript is rebuilt from the recogniser results each time and
+  repeated-word glitches are collapsed, so "hi" no longer becomes "hi hi hi hi". You can edit the text before checking.
 
 PRIVACY
-Everything stays in your browser (localStorage). Nothing is uploaded. Voice recognition is done by your
-browser (Chrome sends audio to its speech service).
+  Everything stays in your browser (localStorage). Nothing is uploaded.
 
-NOTES
-- Scoring is rule-based (keywords and wording), so it is an estimate. A backend with an AI model
-  can be added later for deeper feedback. Keep API keys on the server, never in this folder.
-- Voice works in Chrome and Edge. In other browsers you can type.
-- PDF resumes are not read yet. Use .docx/.txt or paste the text.
-- Add your own content in js/data.js (topics, questions, scenarios, code challenges).
-- Test the logic: node tests/test.js
-- This is an independent learning app. It is not affiliated with or endorsed by ServiceNow.
+HONEST NOTES
+  Scores are keyword/structure based estimates, not a real AI judge. Model answers are general best-practice approaches;
+  company-specific processes differ, so verify against your own project. Edit content in js/data.js and js/content-data.js.
+
+TESTS (needs Node):  node tests/test.js && node tests/test2.js
