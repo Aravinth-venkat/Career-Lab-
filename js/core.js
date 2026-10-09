@@ -6,11 +6,36 @@
 
   function words(t) { return (t || "").replace(/\s+/g, " ").trim().split(" ").filter(Boolean).length; }
 
+  const STOP = new Set("a an the and or but if then of to in on at for with by from as is are was were be been being it its this that these those i you he she we they my your our their me us them do does did done have has had will would can could should may might shall not no yes so than too very just also into out up down over under about after before when where which who whom what why how all any each every some such only own same other more most both few many much one two three using used use make made get got per via etc".split(" "));
+  function stem(w) { w = w.toLowerCase().replace(/[^a-z0-9]/g, ""); if (w.length > 5 && w.endsWith("ies")) return w.slice(0, -3) + "y"; for (const suf of ["ations", "ation", "ments", "ment", "ings", "ing", "ed", "es", "s"]) if (w.length > suf.length + 3 && w.endsWith(suf)) return w.slice(0, -suf.length); return w; }
+  function tokens(t) { return (t || "").toLowerCase().split(/[^a-z0-9]+/).filter(Boolean); }
+  function keyHit(t, stems, k) { k = k.toLowerCase(); if (t.includes(k)) return true; const ks = tokens(k); return ks.length > 0 && ks.every(x => stems.has(stem(x))); }
+
+  /* Chrome speech-to-text can emit the same words many times. Collapse those glitches. */
+  function collapseRuns(text) {
+    let t = (text || "").replace(/\s+/g, " ").trim(), prev;
+    do { prev = t; t = t.replace(/\b([\w'-]+)(?:\s+\1\b){2,}/gi, "$1").replace(/\b((?:[\w'-]+\s+){1,7}[\w'-]+)(?:\s+\1\b)+/gi, "$1"); } while (t !== prev);
+    return t;
+  }
+
+  /* Android Chrome often sends each final result as a growing copy of the previous one ("hi", "hi how", "hi how are you"). Keep only the longest. */
+  function mergeFinals(list) {
+    const out = [];
+    (list || []).map(x => (x || "").trim()).filter(Boolean).forEach(cur => {
+      const prev = out.length ? out[out.length - 1] : null, lc = cur.toLowerCase();
+      if (prev !== null && lc.startsWith(prev.toLowerCase())) out[out.length - 1] = cur;
+      else if (prev !== null && prev.toLowerCase().startsWith(lc)) { /* shorter echo, ignore */ }
+      else out.push(cur);
+    });
+    return collapseRuns(out.join(" "));
+  }
+
   function grade(text, keys) {
     const t = " " + (text || "").toLowerCase() + " ";
     const w = words(text);
     const hit = [], miss = [];
-    (keys || []).forEach(k => (t.includes(k.toLowerCase()) ? hit : miss).push(k));
+    const stems = new Set(tokens(text).map(stem));
+    (keys || []).forEach(k => (keyHit(t, stems, k) ? hit : miss).push(k));
     const know = keys && keys.length ? Math.min(1, hit.length / (keys.length * 0.6)) : 0;
     const hed = HEDGES.filter(x => t.includes(x)).length;
     const bold = BOLD.filter(x => t.includes(x)).length;
@@ -34,7 +59,7 @@
     if (g.words === 0) return "No answer yet. Even a short attempt helps: say what you do know, then reason step by step.";
     if (g.know >= 0.6 && g.conf >= 0.6) return "Strong answer: correct ideas and a confident delivery.";
     if (g.know < 0.4 && g.conf >= 0.6) return "You sounded confident, which is a real strength, but key ideas are missing. Keep the boldness and add the missing concepts.";
-    if (g.know >= 0.6 && g.conf < 0.6) return "You know this, but it sounded unsure. Replace 'I think' or 'maybe' with direct statements.";
+    if (g.know >= 0.6 && g.conf < 0.6) return g.hedges > 0 ? "You know this, but it sounded unsure. Replace 'I think' or 'maybe' with direct statements." : "You covered the right ideas. Add more detail, a reason and a real example so it sounds confident.";
     if (g.hedges >= 2) return "Several hedging phrases made the answer sound unsure. State what you know directly, then explain why.";
     return "Good start. Add the missing ideas and explain your reasoning with 'because' and 'for example'.";
   }
@@ -61,9 +86,12 @@
   }
 
   /* ---------- Resume ---------- */
+  function has(t, a) { a = a.trim(); if (!a) return false; if (a.length > 5) return t.includes(a); const e = a.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"); return new RegExp("(^|[^a-z0-9])" + e + "($|[^a-z0-9])").test(t); }
   function extractSkills(text, skills) {
     const t = " " + (text || "").toLowerCase();
-    return skills.filter(s => s.al.some(a => t.includes(a))).map(s => s.n);
+    const m = skills.filter(s => s.al.some(a => has(t, a))); if (m.length < 3) return m.map(s => s.n);
+    const c = {}; m.forEach(s => { c[s.track] = (c[s.track] || 0) + 1; }); const top = Object.keys(c).sort((a, b) => c[b] - c[a])[0];
+    return m.filter(s => c[s.track] >= 2 || s.track === top).map(s => s.n); /* a single stray word from another field (for example "HR system" in an IT resume) is not a skill */
   }
 
   function analyzeResume(text, skills) {
@@ -77,9 +105,10 @@
     Object.keys(secs).forEach(k => { if (secs[k].some(x => t.includes(x))) sp += 5; else tips.push("Add a " + k + " section."); });
     items.push({ n: "Sections", pts: sp, max: 25 });
     const found = extractSkills(text, skills);
-    if (found.length < 6) tips.push("List more skills you truly have, for example: " + skills.filter(s => !found.includes(s.n)).slice(0, 4).map(s => s.n).join(", ") + ".");
+    const tk = detectTrack(text, skills).slice(0, 1).map(x => x.track);
+    if (found.length < 6) tips.push("List more skills you truly have, for example: " + skills.filter(s => !found.includes(s.n) && (!tk.length || tk.includes(s.track))).slice(0, 4).map(s => s.n).join(", ") + ".");
     items.push({ n: "Skills", pts: Math.min(25, found.length * 3), max: 25 });
-    const nn = (t.match(/\d+\s?%|\b\d{1,4}\+?\s(?:users|incidents|tickets|projects|hours|systems|applications|records|requests|clients|teams|customers)/g) || []).length;
+    const nn = (t.match(/\d+\s?%|[₹$€]\s?\d|\b\d{1,4}(?:[.,]\d+)?\+?\s?(?:k|m|lakhs?|crores?|users|incidents|tickets|projects|hours|systems|applications|records|requests|clients|teams|customers|employees|hires|candidates|invoices|orders|units|vendors|accounts|leads|deals|calls|cases|members|people|machines|parts|suppliers|stores|reports|audits|servers|days|weeks|months)\b/g) || []).length;
     if (nn < 3) tips.push("Add numbers to show impact, e.g. 'reduced incident backlog by 30%' or 'supported 500 users'.");
     items.push({ n: "Measurable impact", pts: Math.min(20, nn * 5), max: 20 });
     let lp = 2;
@@ -160,6 +189,143 @@
     return null;
   }
 
-  const api = { grade, feedback, hints, rescue, explainTemplate, extractSkills, analyzeResume, improveResume, jdMatch, buildMock, followUp, shuffle, words };
+  /* ---------- v2: question generator (never repeats until the pool is used up) ---------- */
+  function rng(rnd) { return rnd || Math.random; }
+  function genQuestions(facts, o, rnd) {
+    o = o || {}; const n = o.count || 8, seen = new Set(o.seen || []), r = rng(rnd);
+    const pool = facts.filter(f => (!o.topic || f.topic === o.topic) && (!o.track || f.track === o.track));
+    const unseen = shuffle(pool.filter(f => !seen.has(f.id)), r), again = shuffle(pool.filter(f => seen.has(f.id)), r);
+    const pick = unseen.concat(again).slice(0, n), out = [];
+    const near = f => shuffle(facts.filter(x => x.id !== f.id && x.t.toLowerCase() !== f.t.toLowerCase() && x.d.toLowerCase() !== f.d.toLowerCase()), r)
+      .sort((a, b) => (b.topic === f.topic) - (a.topic === f.topic) + (b.track === f.track ? .5 : 0) - (a.track === f.track ? .5 : 0));
+    pick.forEach((f, i) => {
+      const kind = Math.floor(r() * 3), ds = near(f).slice(0, 3);
+      if (ds.length < 3) return;
+      let q, opts, ans;
+      if (kind === 0) { q = "Which term is described here?\n" + f.d + "."; opts = shuffle([f.t].concat(ds.map(x => x.t)), r); ans = opts.indexOf(f.t); }
+      else if (kind === 1) { q = "What does \"" + f.t + "\" mean?"; opts = shuffle([f.d].concat(ds.map(x => x.d)), r); ans = opts.indexOf(f.d); }
+      else { const real = r() < .5, shown = real ? f.d : ds[0].d; q = "True or false: \"" + f.t + "\" means: " + shown; opts = ["True", "False"]; ans = real ? 0 : 1; }
+      out.push({ id: f.id, q, o: opts, a: ans, why: f.t + ": " + f.d + ".", fid: f.id, topic: f.topic });
+    });
+    return out;
+  }
+  function genOpen(open, o, rnd) {
+    o = o || {}; const seen = new Set(o.seen || []);
+    let p = open.filter(x => (!o.track || x.track === o.track || !x.track) && (!o.cat || x.cat === o.cat));
+    const un = shuffle(p.filter(x => !seen.has(x.id)), rnd), ag = shuffle(p.filter(x => seen.has(x.id)), rnd);
+    return un.concat(ag).slice(0, o.count || 5);
+  }
+
+  /* ---------- v2: scenarios with model answers ---------- */
+  const sig = w => tokens(w).filter(x => x.length > 3 && !STOP.has(x));
+  function steps(model) { return String(model || "").split(";").map(x => x.trim()).filter(Boolean); }
+  function keysFrom(model, max) {
+    const out = []; steps(model).forEach(s => { const ws = sig(s).sort((a, b) => b.length - a.length); const w = ws.find(x => !out.includes(x)); if (w) out.push(w); });
+    return out.slice(0, max || 7);
+  }
+  function scenQ(topic) {
+    if (!topic || !topic.scen) return null;
+    const st = steps(topic.scen[1]);
+    return { id: "sc:" + topic.id, kind: "Real-time scenario: " + topic.name, q: topic.scen[0] + " What would you do, step by step?", keys: keysFrom(topic.scen[1]), m: st.map((x, i) => (i + 1) + ". " + x).join("\n"), steps: st, topic: topic.name };
+  }
+
+  /* ---------- v2: speaking coach ---------- */
+  const FILL = ["um", "uh", "erm", "like", "you know", "basically", "actually", "literally", "i mean", "kind of", "sort of", "so yeah"];
+  const GRAMMAR = [[/\bi is\b/i, "Say 'I am', not 'I is'."], [/\b(he|she|it) don't\b/i, "Say 'he/she/it doesn't'."], [/\bmore better\b/i, "Say 'better', not 'more better'."], [/\bdiscuss about\b/i, "Say 'discuss' without 'about'."], [/\bi am having\b/i, "Say 'I have' (for example 'I have 3 years of experience')."], [/\brevert back\b/i, "Say 'reply' or 'revert' (not 'revert back')."], [/\bmyself\s+[A-Z][a-z]+/, "Start with 'My name is ...' instead of 'Myself ...'."], [/\bone of the (\w+)\s+(?!\w+s\b)/i, null], [/\bi have (\d+) years? experience\b/i, "Say '... years of experience'."], [/\bpeoples\b/i, "'People' is already plural."], [/\binformations\b/i, "'Information' has no plural."], [/\bstaffs\b/i, "'Staff' has no plural here."], [/\bi worked in (\w+) project\b/i, "Say 'I worked on a project' or 'in the X project'."], [/\bgood in (\w+)\b/i, "Say 'good at'."], [/\bwhere\s+i\s+was\s+working\b/i, null]];
+  function coach(text, secs) {
+    const t = " " + (text || "").toLowerCase().replace(/[.,!?]/g, " ") + " ", w = words(text), tips = [], stat = {};
+    if (!w) return { score: 0, tips: ["Say or type your answer first."], fillers: {}, repeats: [], words: 0, wpm: 0 };
+    const fillers = {}; FILL.forEach(f => { const m = t.split(" " + f + " ").length - 1; if (m) fillers[f] = m; });
+    const fc = Object.values(fillers).reduce((a, b) => a + b, 0);
+    const toks = tokens(text), rep = []; for (let i = 1; i < toks.length; i++) if (toks[i] === toks[i - 1] && toks[i].length > 1 && !rep.includes(toks[i])) rep.push(toks[i]);
+    const gram = GRAMMAR.filter(g => g[1] && g[0].test(text)).map(g => g[1]);
+    const sents = (text || "").split(/[.!?]+/).map(x => x.trim()).filter(Boolean), long = sents.filter(x => words(x) > 35).length;
+    const wpm = secs && secs > 3 ? Math.round(w / (secs / 60)) : 0;
+    let sc = 100; sc -= Math.min(30, fc / w * 300); sc -= Math.min(15, rep.length * 5); sc -= Math.min(24, gram.length * 8); sc -= long * 6;
+    if (w < 15) sc -= 15; if (wpm && (wpm < 90 || wpm > 180)) sc -= 8;
+    if (fc) tips.push("Filler words: " + Object.keys(fillers).map(k => "'" + k + "' x" + fillers[k]).join(", ") + ". Pause silently instead.");
+    if (rep.length) tips.push("Repeated words: " + rep.slice(0, 4).join(", ") + ". Finish one thought, then move on.");
+    gram.forEach(g => tips.push(g));
+    if (long) tips.push("Some sentences are very long. Aim for under 25 words per sentence.");
+    if (wpm && wpm > 180) tips.push("You are speaking fast (" + wpm + " words/min). Aim for 120 to 160.");
+    if (wpm && wpm < 90) tips.push("Your pace is slow (" + wpm + " words/min). Aim for 120 to 160 and keep going.");
+    if (w < 15) tips.push("Very short. Add one example or one reason.");
+    if (!tips.length) tips.push("Clear delivery. Keep this pace and structure.");
+    return { score: Math.max(0, Math.round(sc)), tips, fillers, repeats: rep, words: w, wpm, grammar: gram };
+  }
+
+  /* ---------- v2: read-aloud practice (pronunciation and fluency) ---------- */
+  function readAloud(target, said) {
+    const a = tokens(target), b = tokens(said), n = a.length, m = b.length, L = Array.from({ length: n + 1 }, () => new Array(m + 1).fill(0));
+    for (let i = 1; i <= n; i++) for (let j = 1; j <= m; j++) L[i][j] = a[i - 1] === b[j - 1] ? L[i - 1][j - 1] + 1 : Math.max(L[i - 1][j], L[i][j - 1]);
+    const hit = new Set(); let i = n, j = m; while (i > 0 && j > 0) { if (a[i - 1] === b[j - 1]) { hit.add(i - 1); i--; j--; } else if (L[i - 1][j] >= L[i][j - 1]) i--; else j--; }
+    const missed = a.filter((_, k) => !hit.has(k)), pct = n ? Math.round(100 * hit.size / n) : 0;
+    return { pct, missed: missed.filter((x, k, z) => z.indexOf(x) === k), total: n };
+  }
+
+  /* ---------- v2: self-introduction builder ---------- */
+  function introText(p) {
+    const s = (p.skills || []).filter(Boolean), list = s.length > 1 ? s.slice(0, -1).join(", ") + " and " + s[s.length - 1] : (s[0] || "my core skills");
+    return "Good morning. My name is " + (p.name || "[your name]") + ". I am a " + (p.role || "[your role]") + " with " + (p.years || "[number]") + " of experience. I mainly work with " + list + ". " +
+      (p.achievement ? "One of my achievements: " + p.achievement + ". " : "One thing I am proud of is [a result with a number]. ") +
+      "I am now looking for " + (p.goal || "a role where I can grow and add value") + ". Thank you for the opportunity.";
+  }
+
+  /* ---------- v2: study plan ---------- */
+  function studyPlan(topics, days) {
+    days = days || 7; const plan = []; const list = topics.length ? topics : [];
+    for (let d = 0; d < days; d++) {
+      const t = list[d % Math.max(1, list.length)], items = [];
+      if (d === 0) items.push({ k: "intro", t: "Write and practise your self-introduction (aim for 45 to 60 seconds)" });
+      if (t) { items.push({ k: "learn", t: "Learn: " + t.name, topic: t.id }, { k: "quiz", t: "Take the " + t.name + " quiz", topic: t.id }, { k: "scen", t: "Answer the real-time scenario for " + t.name + " out loud", topic: t.id }); }
+      if (d === days - 1) items.push({ k: "mock", t: "Take a full mock interview and read the report" }); else if (d % 2 === 1) items.push({ k: "speak", t: "Speaking drill: read aloud, then record one answer and check the coach tips" });
+      plan.push({ day: d + 1, items });
+    }
+    return plan;
+  }
+
+  /* ---------- v2: resume to track / projects / learning path ---------- */
+  function detectTrack(text, skills) {
+    const t = " " + (text || "").toLowerCase(), c = {};
+    skills.forEach(s => { if (s.al.some(a => has(t, a))) c[s.track || "servicenow"] = (c[s.track || "servicenow"] || 0) + 1; });
+    return Object.keys(c).map(k => ({ track: k, n: c[k] })).sort((a, b) => b.n - a.n);
+  }
+  function projectLines(resume) {
+    const seen = new Set(); return (resume || "").split(/\n+/).map(s => s.replace(/^[\s\-*•·●▪◦\d.)]+/, "").trim()).filter(s => {
+      if (s.length < 35 || s.length > 280) return false; const k = s.toLowerCase(); if (seen.has(k)) return false;
+      if (!(/^(built|build|develop|implement|design|configur|integrat|automat|migrat|manag|led|lead|creat|deliver|reduc|improv|increas|resolv|negotiat|launch|handl|analy|prepar|support|train|recruit|audit|reconcil|sold|optimi|maintain|inspect|test|coordinat|conduct|execut|drove|ran|set up|establish|monitor|process|review|plan|organi|facilitat|streamlin|generat|achiev|won|closed|onboard|screen|source)/i.test(s) || /\bproject\b/i.test(s))) return false;
+      seen.add(k); return true; }).slice(0, 8);
+  }
+  function topicsInText(text, topics) {
+    const t = " " + (text || "").toLowerCase(); return topics.filter(tp => tp.scen && ((tp.aliases ? tp.aliases.split(";") : []).concat([tp.name.toLowerCase(), (tp.skill || "").toLowerCase()])).some(a => a.trim().length > 3 && has(t, a)));
+  }
+  const OWN = ["built", "designed", "implemented", "configured", "developed", "result", "improved", "reduced", "tested", "team", "requirement", "role", "responsib"];
+  function buildProjectRound(resume, topics, tracks) {
+    if (tracks && tracks.length) topics = topics.filter(t => tracks.includes(t.track) || t.track === "pm" || t.track === "soft");
+    const out = [], lines = projectLines(resume), used = new Set();
+    lines.slice(0, 3).forEach((ln, i) => {
+      const lk = sig(ln).filter((x, k, z) => z.indexOf(x) === k).slice(0, 5);
+      out.push({ id: "pl" + i, kind: "Your project " + (i + 1), q: "Your resume says: \"" + ln + "\" What was the problem, what exactly did YOU do, and what was the result?", keys: lk.concat(["result", "my role"]), m: "Describe it as: Situation (the problem and context), Task (your responsibility), Action (the specific steps YOU took, naming tools and decisions), Result (a number or visible outcome). Be honest about what the team did versus what you did.", topic: "your project", line: ln });
+      topicsInText(ln, topics).slice(0, 1).forEach(tp => { if (!used.has(tp.id)) { used.add(tp.id); const sq = scenQ(tp); out.push(Object.assign(sq, { kind: "Because your project used " + tp.name, q: "In the project above you worked with " + tp.name + ". Real-time situation: " + sq.q })); } });
+    });
+    topicsInText(resume, topics).forEach(tp => { if (!used.has(tp.id) && used.size < 8) { used.add(tp.id); out.push(scenQ(tp)); } });
+    out.push({ id: "pch", kind: "Project depth", q: "In your most recent project, what was the hardest problem, how did you find the cause, and what would you do differently now?", keys: ["problem", "cause", "log", "test", "fix", "learn", "differently", "team"], m: "Name one real problem, how you investigated (logs, reproduce, ask), the fix, and one improvement you would make. Interviewers value honest learning.", topic: "your project" });
+    return out;
+  }
+  function claimsCheck(found, scores) {
+    const solid = [], shaky = [], untested = [];
+    found.forEach(s => { const v = scores[s]; if (v === undefined) untested.push(s); else if (v >= .6) solid.push(s); else shaky.push(s); });
+    return { solid, shaky, untested };
+  }
+  function skillLearnPath(found, topics, accuracy, track) {
+    const foundSet = new Set(found), mine = topics.filter(t => foundSet.has(t.skill) || foundSet.has(t.name));
+    const rank = t => accuracy[t.name] === undefined ? .5 : accuracy[t.name];
+    const a = mine.slice().sort((x, y) => rank(x) - rank(y)).map(t => ({ topic: t, why: accuracy[t.name] === undefined ? "On your resume, not practised yet" : rank(t) < .7 ? "On your resume, accuracy " + Math.round(rank(t) * 100) + "%" : "On your resume, keep it fresh", kind: "resume" }));
+    const ids = new Set(mine.map(t => t.id)), tr = track || (mine[0] && mine[0].track);
+    const b = topics.filter(t => t.track === tr && !ids.has(t.id)).sort((x, y) => (x.adv ? 1 : 0) - (y.adv ? 1 : 0)).slice(0, 4).map(t => ({ topic: t, why: "Often asked next in " + tr + " interviews", kind: "next" }));
+    return a.concat(b);
+  }
+
+  const api = { grade, feedback, hints, rescue, explainTemplate, extractSkills, analyzeResume, improveResume, jdMatch, buildMock, followUp, shuffle, words, stem, collapseRuns, mergeFinals, genQuestions, genOpen, steps, keysFrom, scenQ, coach, readAloud, introText, studyPlan, detectTrack, projectLines, topicsInText, buildProjectRound, claimsCheck, skillLearnPath };
   if (typeof module !== "undefined" && module.exports) module.exports = api; else root.Core = api;
 })(typeof window !== "undefined" ? window : globalThis);
