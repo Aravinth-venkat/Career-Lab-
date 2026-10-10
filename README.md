@@ -1,6 +1,6 @@
-# Career Lab
+# Padimachi
 
-Live site: https://aravinth-venkat.github.io/Career-Lab-/
+Live site: https://padimachi.com/
 
 Learn, practise and prepare for interviews in IT, non-IT, design and engineering fields.
 
