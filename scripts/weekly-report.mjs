@@ -2,6 +2,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { gaps } from './gap-report.mjs';
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = process.env.JOBS_ROOT || path.join(HERE, '..'), DATA = path.join(ROOT, 'data');
 const readJson = (f, d) => { try { return JSON.parse(fs.readFileSync(path.join(DATA, f), 'utf8')); } catch { return d; } };
@@ -24,6 +25,10 @@ export function report(now) {
   if (lk && lk.summary) L.push(`- Links checked: **${lk.summary.checked}**, broken for two weeks: **${lk.summary.broken.length}**${lk.summary.broken.length ? ' (' + lk.summary.broken.slice(0, 8).map(x => x[0]).join(', ') + ')' : ''}`);
   else L.push('- Link check has not run yet.');
   if (st.withoutText !== undefined) L.push(`- Open jobs without a description: **${st.withoutText}** (descriptions are filled in a few at a time)`);
+  const gp = gaps(ROOT), sal = readJson('salary.json', null);
+  L.push('', '### Write next');
+  L.push(gp === null ? '- Learning pages not found, gap check skipped.' : gp.length ? `- Skills in demand with no learning page yet: ${gp.map(x => x[0] + ' (' + x[1] + ' jobs)').join(', ')}` : '- Every skill in demand is already covered by a learning page.');
+  if (sal) L.push(`- Jobs that publish pay: **${sal.withPay ?? 0}**; fields with a pay range on the website: **${Object.keys(sal.fields || {}).length}**`);
   L.push('', '### Market notes', `- Waiting for your approval: **${pend.length}** (tick them in the "Market notes waiting for your approval" issue)`, `- Shown on the website: **${notes.length}**`);
   L.push('', '### Needs a human', '- Learning content, tips and healthcare content are not changed automatically. Review them when you add new topics.');
   return L.join('\n');

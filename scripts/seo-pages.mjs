@@ -22,9 +22,10 @@ const group = (list, f) => { const m = new Map(); for (const j of list) { const 
 const link = (href, text, n) => `<a href="${X(href)}">${X(text)}${n ? ' (' + n + ')' : ''}</a>`;
 const stamp = now => new Date(now).toISOString().slice(0, 10);
 
-export function build(allJobs, now = Date.now()) {
+export function build(allJobs, now = Date.now(), sal = null) {
   const open = allJobs.filter(j => !j.x && j.t && j.c && now - (j.p || j.s) <= 90 * DAY).sort((a, b) => (b.p || b.s) - (a.p || a.s));
   const files = {}, urls = [], cityOf = j => normCity(j.l) || '';
+  const salBlock = (f, c) => { const x = sal && (c ? sal.combos && sal.combos[f + '|' + c] : sal.fields && sal.fields[f]); return x ? `<div class="card"><b>Pay posted by companies</b><br>Across ${x.n} openings that list pay${c ? ' in ' + X(c) : ''}, the typical range is ₹${x.lo} to ₹${x.hi} lakh a year. Only companies that publish pay are counted, so treat this as a guide.</div>` : ''; };
   const page = (file, title, desc, h1, intro, jobs, extra) => { files[file] = shell(title, desc, `${SITE}/${file === 'openings/index.html' ? 'openings/' : file}`, `<h1>${X(h1)}</h1><p>${X(intro)} Updated ${stamp(now)}.</p><p><a class="btn" href="/#/openings">See openings matched to your resume</a></p>${jobs.slice(0, MAX_SHOWN).map(j => jobCard(j, now)).join('')}${jobs.length > MAX_SHOWN ? `<p>Showing the newest ${MAX_SHOWN} of ${jobs.length}. <a href="/#/openings">Search all of them on Padimachi</a>.</p>` : ''}${extra || ''}`); urls.push(`${SITE}/${file === 'openings/index.html' ? 'openings/' : file}`); };
   const byCo = group(open, j => j.c), byField = group(open, j => fieldOf(j.t));
   const companies = [...byCo].filter(x => x[1].length >= MIN_COMPANY).sort((a, b) => b[1].length - a[1].length);
@@ -41,9 +42,9 @@ export function build(allJobs, now = Date.now()) {
   const fFiles = new Map(fields.map(([f]) => [f, 'jobs-' + f]));
   for (const [f, list] of fields) {
     const cs = combos.filter(x => x[0] === f).sort((a, b) => b[2].length - a[2].length);
-    page(`openings/${fFiles.get(f)}.html`, `${fname(f)} jobs in India: ${list.length} open now | Padimachi`, `${list.length} current ${fname(f).toLowerCase()} openings in India from companies' own job pages. See titles, cities and apply links.`, `${fname(f)} jobs in India`, `${list.length} ${fname(f).toLowerCase()} openings right now.`, list, (cs.length ? `<h2>By city</h2><p>${cs.map(x => link(`/openings/jobs-${f}-in-${slug(x[1])}.html`, `${fname(f)} jobs in ${x[1]}`, x[2].length)).join(' · ')}</p>` : '') + `<p>${link('/learn/' + (f === 'marketing' ? 'dmkt' : f) + '.html', 'Free ' + fname(f) + ' interview guide')}</p>`);
+    page(`openings/${fFiles.get(f)}.html`, `${fname(f)} jobs in India: ${list.length} open now | Padimachi`, `${list.length} current ${fname(f).toLowerCase()} openings in India from companies' own job pages. See titles, cities and apply links.`, `${fname(f)} jobs in India`, `${list.length} ${fname(f).toLowerCase()} openings right now.`, list, (cs.length ? `<h2>By city</h2><p>${cs.map(x => link(`/openings/jobs-${f}-in-${slug(x[1])}.html`, `${fname(f)} jobs in ${x[1]}`, x[2].length)).join(' · ')}</p>` : '') + salBlock(f) + `<p>${link('/learn/' + (f === 'marketing' ? 'dmkt' : f) + '.html', 'Free ' + fname(f) + ' interview guide')}</p>`);
   }
-  for (const [f, c, list] of combos) page(`openings/jobs-${f}-in-${slug(c)}.html`, `${fname(f)} jobs in ${c}: ${list.length} open now | Padimachi`, `${list.length} current ${fname(f).toLowerCase()} openings in ${c} from companies' own job pages.`, `${fname(f)} jobs in ${c}`, `${list.length} ${fname(f).toLowerCase()} openings in ${c} right now.`, list, `<p>${link(`/openings/${fFiles.get(f)}.html`, 'All ' + fname(f) + ' jobs in India')}</p>`);
+  for (const [f, c, list] of combos) page(`openings/jobs-${f}-in-${slug(c)}.html`, `${fname(f)} jobs in ${c}: ${list.length} open now | Padimachi`, `${list.length} current ${fname(f).toLowerCase()} openings in ${c} from companies' own job pages.`, `${fname(f)} jobs in ${c}`, `${list.length} ${fname(f).toLowerCase()} openings in ${c} right now.`, list, salBlock(f, c) + `<p>${link(`/openings/${fFiles.get(f)}.html`, 'All ' + fname(f) + ' jobs in India')}</p>`);
   const idx = `<h2>By field</h2><p>${fields.map(([f, l]) => link(`/openings/${fFiles.get(f)}.html`, fname(f), l.length)).join(' · ') || 'Not enough openings yet.'}</p><h2>Companies hiring now</h2><p>${companies.slice(0, 80).map(([c, l]) => link(`/openings/${coFiles.get(c)}.html`, c, l.length)).join(' · ') || 'Not enough openings yet.'}</p>`;
   page('openings/index.html', `Job openings in India: ${open.length} open now | Padimachi`, `${open.length} recent job openings in India from companies' own job pages, by field, city and company. Free, updated every few hours.`, 'Job openings in India', `${open.length} recent openings from ${byCo.size} companies, taken from their own public job pages.`, [], idx);
   return { files, urls };
@@ -53,7 +54,8 @@ export function writeAll(root = ROOT, now = Date.now()) {
   let jobs = []; try { jobs = JSON.parse(fs.readFileSync(path.join(root, 'data', 'jobs.json'), 'utf8')).jobs || []; } catch {}
   const dir = path.join(root, 'openings');
   if (jobs.length < 50) { return { skipped: true, reason: 'too few jobs, pages left as they were' }; }
-  const { files, urls } = build(jobs, now);
+  let sal = null; try { sal = JSON.parse(fs.readFileSync(path.join(root, 'data', 'salary.json'), 'utf8')); } catch {}
+  const { files, urls } = build(jobs, now, sal);
   fs.rmSync(dir, { recursive: true, force: true }); fs.mkdirSync(dir, { recursive: true });
   for (const [f, html] of Object.entries(files)) fs.writeFileSync(path.join(root, f), html);
   const sm = path.join(root, 'sitemap.xml'); let x = ''; try { x = fs.readFileSync(sm, 'utf8'); } catch {}

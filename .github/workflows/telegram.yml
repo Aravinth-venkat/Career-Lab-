@@ -1,0 +1,30 @@
+name: Telegram digest
+on:
+  schedule:
+    - cron: '30 3 * * *'
+  workflow_dispatch: {}
+permissions:
+  contents: write
+concurrency:
+  group: jobs-update
+  cancel-in-progress: false
+jobs:
+  post:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Post new openings to the channel
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: node scripts/telegram-post.mjs
+      - name: Remember what was posted
+        run: |
+          git config user.name "padimachi-telegram-bot"
+          git config user.email "noreply@users.noreply.github.com"
+          git add data/telegram.json 2>/dev/null || true
+          if git diff --cached --quiet; then echo "no change"; else git commit -m "Telegram digest posted"; git pull -q --rebase || true; git push; fi
