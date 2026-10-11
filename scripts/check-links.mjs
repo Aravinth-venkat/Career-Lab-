@@ -28,7 +28,7 @@ export async function checkAll(urls, { f = fetch, prev = {}, now = Date.now(), d
 }
 export const summary = links => { const v = Object.entries(links); return { checked: v.length, ok: v.filter(x => x[1].state === 'ok').length, unknown: v.filter(x => x[1].state === 'unknown').length, broken: v.filter(x => x[1].state === 'dead' && x[1].strikes >= 2).map(x => [x[0], x[1].status]), pending: v.filter(x => x[1].state === 'dead' && x[1].strikes < 2).length }; };
 export function sources(root) {
-  const files = []; const walk = d => { for (const n of fs.readdirSync(d, { withFileTypes: true })) { if (n.name.startsWith('.') || n.name === 'data' || n.name === 'scripts' || n.name === 'node_modules' || n.name === 'voice') continue; const p = path.join(d, n.name); if (n.isDirectory()) walk(p); else if (/\.(js|html)$/.test(n.name)) files.push(p); } }; walk(root);
+  const files = []; const walk = d => { for (const n of fs.readdirSync(d, { withFileTypes: true })) { if (n.name.startsWith('.') || n.name === 'data' || n.name === 'scripts' || n.name === 'node_modules' || n.name === 'voice' || n.name === 'openings') continue; const p = path.join(d, n.name); if (n.isDirectory()) walk(p); else if (/\.(js|html)$/.test(n.name)) files.push(p); } }; walk(root);
   return files;
 }
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
