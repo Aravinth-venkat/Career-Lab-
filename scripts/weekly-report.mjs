@@ -18,6 +18,12 @@ export function report(now) {
   if (health.stale && health.stale.length) L.push(`- Boards returning "not found": ${health.stale.slice(0, 8).join(', ')}`);
   if (Object.keys(dead).length) L.push(`- Boards dropped as gone: ${Object.keys(dead).length}`);
   if (runs7.length < 8) L.push('- ⚠️ Fewer than 8 runs this week. GitHub may be skipping scheduled runs.');
+  const lk = readJson('links.json', null), mon = readJson('monitor.json', null);
+  L.push('', '### Website and links');
+  if (mon) L.push(`- Last daily site check: ${mon.bad && mon.bad.length ? '⚠️ ' + mon.bad.join(' ') : 'healthy'}`);
+  if (lk && lk.summary) L.push(`- Links checked: **${lk.summary.checked}**, broken for two weeks: **${lk.summary.broken.length}**${lk.summary.broken.length ? ' (' + lk.summary.broken.slice(0, 8).map(x => x[0]).join(', ') + ')' : ''}`);
+  else L.push('- Link check has not run yet.');
+  if (st.withoutText !== undefined) L.push(`- Open jobs without a description: **${st.withoutText}** (descriptions are filled in a few at a time)`);
   L.push('', '### Market notes', `- Waiting for your approval: **${pend.length}** (tick them in the "Market notes waiting for your approval" issue)`, `- Shown on the website: **${notes.length}**`);
   L.push('', '### Needs a human', '- Learning content, tips and healthcare content are not changed automatically. Review them when you add new topics.');
   return L.join('\n');

@@ -1,0 +1,43 @@
+name: Check the live website
+on:
+  schedule:
+    - cron: '23 4 * * *'
+  workflow_dispatch: {}
+permissions:
+  contents: write
+  issues: write
+jobs:
+  monitor:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Check the live site
+        id: chk
+        continue-on-error: true
+        run: node scripts/monitor.mjs | tee /tmp/monitor.txt
+      - name: Raise or clear the alert issue
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RESULT: ${{ steps.chk.outcome }}
+        run: |
+          TITLE="🚨 Padimachi website check failed"
+          NUM=$(gh issue list --state open --search "$TITLE in:title" --json number,title -q '.[] | select(.title=="'"$TITLE"'") | .number' | head -1)
+          if [ "$RESULT" = "failure" ]; then
+            BODY="The daily check of padimachi.com found a problem:
+
+$(cat /tmp/monitor.txt)
+
+This issue closes by itself when the next check is healthy."
+            if [ -z "$NUM" ]; then gh issue create --title "$TITLE" --body "$BODY"; else gh issue comment "$NUM" --body "$BODY"; fi
+          elif [ -n "$NUM" ]; then gh issue close "$NUM" --comment "Recovered. The latest check was healthy."; fi
+      - name: Save the last result
+        continue-on-error: true
+        run: |
+          git config user.name "padimachi-monitor-bot"
+          git config user.email "noreply@users.noreply.github.com"
+          git add data/monitor.json
+          if git diff --cached --quiet; then echo "no change"; else git commit -m "Site check result"; git pull -q --rebase || true; git push; fi

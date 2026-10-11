@@ -22,9 +22,9 @@ const decode = s => String(s || '').replace(/&lt;/g, '<').replace(/&gt;/g, '>').
 export const plain = s => decode(decode(s)).replace(/<style[\s\S]*?<\/style>|<script[\s\S]*?<\/script>/gi, ' ').replace(/<\/(p|li|div|h\d|br)>|<br\s*\/?>/gi, ' ').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
 const safeUrl = u => { try { const x = new URL(String(u)); return x.protocol === 'https:' ? x.href : ''; } catch { return ''; } };
 
-async function get(url) {
+async function get(url, opt = {}) {
   const ctl = new AbortController(), t = setTimeout(() => ctl.abort(), 25000);
-  try { const r = await fetch(url, { headers: { 'User-Agent': UA, Accept: 'application/json' }, signal: ctl.signal }); if (!r.ok) return { ok: false, status: r.status }; return { ok: true, json: await r.json() }; }
+  try { const r = await fetch(url, { method: opt.body ? 'POST' : 'GET', headers: Object.assign({ 'User-Agent': UA, Accept: 'application/json' }, opt.body ? { 'Content-Type': 'application/json' } : {}), body: opt.body ? JSON.stringify(opt.body) : undefined, signal: ctl.signal }); if (!r.ok) return { ok: false, status: r.status }; return { ok: true, json: await r.json() }; }
   catch (e) { return { ok: false, status: 0 }; } finally { clearTimeout(t); }
 }
 
@@ -54,7 +54,38 @@ export const PROV = {
     url: s => `https://api.ashbyhq.com/posting-api/job-board/${s}`,
     map: (j, s, co) => (j.jobs || []).filter(x => x.isListed !== false).map(x => ({ id: 'ab:' + s + ':' + x.id, c: co, t: x.title, l: x.location || '', u: safeUrl(x.jobUrl), a: safeUrl(x.applyUrl), p: Date.parse(x.publishedAt) || 0, d: plain(x.descriptionPlain || x.descriptionHtml).slice(0, DESC) })),
   },
+  wd: {
+    // key is wd:tenant~dc~site, for example wd:adobe~wd5~external_experienced (the three parts of the company's Workday job page address)
+    url: s => { const [t, dc, site] = s.split('~'); return `https://${t}.${dc}.myworkdayjobs.com/wday/cxs/${t}/${site}/jobs`; },
+    load: async s => {
+      const u = PROV.wd.url(s), all = [];
+      for (let off = 0; off < 100; off += 20) {
+        const r = await get(u, { body: { appliedFacets: {}, limit: 20, offset: off, searchText: 'India' } }); await sleep(100);
+        if (!r.ok) { if (off === 0) return r; break; }
+        const list = (r.json && r.json.jobPostings) || []; all.push(...list); if (list.length < 20) break;
+      }
+      return { ok: true, json: { jobPostings: all } };
+    },
+    map: (j, s, co) => { const [t, dc, site] = s.split('~'); return (j.jobPostings || []).filter(x => x.title && x.externalPath).map(x => ({ id: 'wd:' + s + ':' + String(x.externalPath).split('/').pop(), c: co, t: x.title, l: /^\d+\s+locations?$/i.test(x.locationsText || '') ? 'India' : (x.locationsText || ''), u: safeUrl(`https://${t}.${dc}.myworkdayjobs.com/${site}${x.externalPath}`), p: parsePosted(x.postedOn, Date.now()), d: '' })); },
+  },
 };
+
+export const parsePosted = (txt, now) => { const t = String(txt || '').toLowerCase(); if (/today/.test(t)) return now; if (/yesterday/.test(t)) return now - DAY; const m = /(\d+)\+?\s*days?/.exec(t); return m ? now - (+m[1]) * DAY : 0; };
+const load = (p, s) => PROV[p].load ? PROV[p].load(s) : get(PROV[p].url(s));
+
+// Many boards list jobs without text (SmartRecruiters, Workday). Fetch the text of a few open jobs per run so that matching can use it.
+export const detailOf = j => {
+  const [p, a, b] = String(j.id).split(':');
+  if (p === 'sr') return { url: `https://api.smartrecruiters.com/v1/companies/${a}/postings/${b}`, text: x => { const sec = (x && x.jobAd && x.jobAd.sections) || {}; return ['jobDescription', 'qualifications'].map(k => sec[k] && sec[k].text).filter(Boolean).join(' '); } };
+  if (p === 'wd') { const [t, dc, site] = a.split('~'), base = `https://${t}.${dc}.myworkdayjobs.com/${site}`; if (!String(j.u).startsWith(base)) return null; return { url: `https://${t}.${dc}.myworkdayjobs.com/wday/cxs/${t}/${site}${String(j.u).slice(base.length)}`, text: x => (x && x.jobPostingInfo && x.jobPostingInfo.jobDescription) || '' }; }
+  return null;
+};
+export async function enrich(jobs, cap, getter = get) {
+  let n = 0, done = 0;
+  const todo = jobs.filter(j => !j.x && !j.d && detailOf(j)).sort((a, b) => b.p - a.p).slice(0, cap);
+  await pool(todo, 4, async j => { const d = detailOf(j), r = await getter(d.url); n++; await sleep(80); if (!r.ok) return; const txt = plain(d.text(r.json)).slice(0, 600); if (txt.length > 40) { j.d = txt; done++; } });
+  return { tried: n, filled: done };
+}
 
 export const slugs = name => {
   const base = String(name).toLowerCase().replace(/\(.*?\)/g, ' ').replace(/&/g, ' and ').replace(/['’.]/g, '');
@@ -69,9 +100,9 @@ const norm = s => String(s).toLowerCase().replace(/[^a-z0-9]/g, '');
 async function pool(items, n, fn) { let i = 0; await Promise.all(Array.from({ length: n }, async () => { while (i < items.length) { const k = i++; await fn(items[k], k); } })); }
 
 export async function probe(company, boards, hints = []) {
-  for (const h of hints) { const [p, s] = h.split(':'); if (!PROV[p]) continue; const r = await get(PROV[p].url(s)); await sleep(120); if (!r.ok) continue; const jobs = PROV[p].map(r.json, s, company); if (jobs.some(j => INDIA.test(j.l))) { boards[p + ':' + s] = company; return true; } }
+  for (const h of hints) { const [p, s] = h.split(':'); if (!PROV[p]) continue; const r = await load(p, s); await sleep(120); if (!r.ok) continue; const jobs = PROV[p].map(r.json, s, company); if (jobs.some(j => INDIA.test(j.l))) { boards[p + ':' + s] = company; return true; } }
   for (const s of slugs(company)) for (const p of ['gh', 'lv', 'ab', 'wk', 'rc', 'sr']) {
-    const r = await get(PROV[p].url(s)); await sleep(120);
+    const r = await load(p, s); await sleep(120);
     if (!r.ok) continue;
     const jobs = PROV[p].map(r.json, s, company);
     if (!jobs.length || !jobs.some(j => INDIA.test(j.l))) continue;
@@ -116,7 +147,7 @@ export async function main() {
   for (const k of Object.keys(boards)) if (shouldDrop(k, hb, manual)) { dead[k] = { company: boards[k], t: NOW }; miss[boards[k]] = NOW; delete boards[k]; }
   const prev = (readJson('jobs.json', { jobs: [] }).jobs) || [], fetched = [], ok = new Set(), failed = [], results = {};
   await pool(Object.entries(boards).filter(([k]) => shouldFetch(k, hb, runNo, manual)), 6, async ([key, company]) => {
-    const [p, s] = key.split(':'), r = await get(PROV[p].url(s)); await sleep(100);
+    const [p, s] = key.split(':'), r = await load(p, s); await sleep(100);
     results[key] = { ok: r.ok, status: r.status || 0 };
     if (!r.ok) { failed.push(key + ' ' + r.status); return; }
     ok.add(key); fetched.push(...PROV[p].map(r.json, s, company).filter(j => j.t && j.u && INDIA.test(j.l)));
@@ -125,6 +156,7 @@ export async function main() {
   for (const k of Object.keys(results)) if (results[k] === null) delete results[k];
   const skipped = Object.keys(boards).filter(k => !(k in results));
   const jobs = merge(prev, fetched, new Set([...ok].filter(k => !skipped.includes(k))), NOW);
+  const enr = await enrich(jobs, +process.env.ENRICH_PER_RUN || 120);
   const open = jobs.filter(j => !j.x).length;
   let skills = []; try { skills = JSON.parse(fs.readFileSync(path.join(HERE, 'skills.json'), 'utf8')); } catch {}
   const firstRun = !fs.existsSync(path.join(DATA, 'first-seen.json'));
@@ -134,7 +166,7 @@ export async function main() {
   writeJson('insights.json', buildInsights(jobs, skills, NOW)); writeJson('hiring.json', { updated: NOW, list: buildHiring(jobs, firstSeen, NOW) });
   const cur = { open, boards: Object.keys(results).length, boardsOk: Object.values(results).filter(r => r.ok).length, failed: failed.slice(0, 20), fetched: fetched.length };
   const health = updateHealth(health0, cur, results, NOW); writeJson('health.json', health);
-  writeJson('status.json', { updated: NOW, boards: Object.keys(boards).length, boardsOk: cur.boardsOk, skipped: skipped.length, failed: failed.slice(0, 60), discovered: found, probed: todo.length, open, closed: jobs.length - open, alert: health.alert });
+  writeJson('status.json', { updated: NOW, boards: Object.keys(boards).length, boardsOk: cur.boardsOk, skipped: skipped.length, failed: failed.slice(0, 60), discovered: found, described: enr.filled, withoutText: jobs.filter(j => !j.x && !j.d).length, probed: todo.length, open, closed: jobs.length - open, alert: health.alert });
   console.log(`boards ${cur.boardsOk}/${Object.keys(boards).length}, discovered ${found}/${todo.length}, jobs open ${open}, closed ${jobs.length - open}, failed ${failed.length}`);
 }
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) main().catch(e => { console.error(e); process.exit(1); });
