@@ -1,0 +1,35 @@
+name: Publish approved notes
+on:
+  issues:
+    types: [edited]
+permissions:
+  contents: write
+  pages: write
+concurrency:
+  group: jobs-update
+  cancel-in-progress: false
+jobs:
+  approve:
+    if: github.event.sender.login == github.repository_owner && startsWith(github.event.issue.title, 'Market notes waiting')
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Read the ticked notes
+        env:
+          ISSUE_BODY: ${{ github.event.issue.body }}
+        run: node scripts/approve-notes.mjs
+      - name: Save
+        run: |
+          git config user.name "padimachi-jobs-bot"
+          git config user.email "noreply@users.noreply.github.com"
+          git add data
+          if git diff --cached --quiet; then echo "no change"; else git commit -m "Publish approved market notes"; git pull -q --rebase || true; git push; fi
+      - name: Ask GitHub Pages to publish
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh api -X POST "repos/${{ github.repository }}/pages/builds" || true

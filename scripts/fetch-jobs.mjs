@@ -5,6 +5,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { buildInsights, buildHiring, updateFirstSeen, updateHealth, shouldFetch, shouldDrop } from './insights.mjs';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = process.env.JOBS_ROOT || path.join(HERE, '..');
@@ -109,18 +110,31 @@ export async function main() {
   const todo = all.filter(n => !known.has(norm(n)) && !(miss[n] && NOW - miss[n] < 14 * DAY)).slice(0, PROBE_PER_RUN);
   let found = 0;
   await pool(todo, 4, async n => { if (await probe(n, boards, cand[n] || [])) found++; else miss[n] = NOW; });
-  // fetch all known boards
-  const prev = (readJson('jobs.json', { jobs: [] }).jobs) || [], fetched = [], ok = new Set(), failed = [];
-  await pool(Object.entries(boards), 6, async ([key, company]) => {
+  // fetch all known boards (boards that keep returning "not found" are retried only every 6th run; after about 6 days they are dropped)
+  const health0 = readJson('health.json', {}), runNo = (health0.runNo || 0) + 1, hb = health0.boards || {};
+  const dead = readJson('boards-dead.json', {});
+  for (const k of Object.keys(boards)) if (shouldDrop(k, hb, manual)) { dead[k] = { company: boards[k], t: NOW }; miss[boards[k]] = NOW; delete boards[k]; }
+  const prev = (readJson('jobs.json', { jobs: [] }).jobs) || [], fetched = [], ok = new Set(), failed = [], results = {};
+  await pool(Object.entries(boards).filter(([k]) => shouldFetch(k, hb, runNo, manual)), 6, async ([key, company]) => {
     const [p, s] = key.split(':'), r = await get(PROV[p].url(s)); await sleep(100);
+    results[key] = { ok: r.ok, status: r.status || 0 };
     if (!r.ok) { failed.push(key + ' ' + r.status); return; }
     ok.add(key); fetched.push(...PROV[p].map(r.json, s, company).filter(j => j.t && j.u && INDIA.test(j.l)));
   });
-  const jobs = merge(prev, fetched, ok, NOW);
+  for (const k of Object.keys(boards)) if (!(k in results)) ok.add(k), results[k] = null; // skipped this run: keep its jobs as they are
+  for (const k of Object.keys(results)) if (results[k] === null) delete results[k];
+  const skipped = Object.keys(boards).filter(k => !(k in results));
+  const jobs = merge(prev, fetched, new Set([...ok].filter(k => !skipped.includes(k))), NOW);
   const open = jobs.filter(j => !j.x).length;
+  let skills = []; try { skills = JSON.parse(fs.readFileSync(path.join(HERE, 'skills.json'), 'utf8')); } catch {}
+  const firstRun = !fs.existsSync(path.join(DATA, 'first-seen.json'));
+  const firstSeen = updateFirstSeen(readJson('first-seen.json', {}), boards, NOW, firstRun);
   writeJson('jobs.json', { updated: NOW, jobs });
-  writeJson('boards.json', boards); writeJson('boards-miss.json', miss);
-  writeJson('status.json', { updated: NOW, boards: Object.keys(boards).length, boardsOk: ok.size, failed: failed.slice(0, 60), discovered: found, probed: todo.length, open, closed: jobs.length - open });
-  console.log(`boards ${ok.size}/${Object.keys(boards).length}, discovered ${found}/${todo.length}, jobs open ${open}, closed ${jobs.length - open}, failed ${failed.length}`);
+  writeJson('boards.json', boards); writeJson('boards-miss.json', miss); writeJson('boards-dead.json', dead); writeJson('first-seen.json', firstSeen);
+  writeJson('insights.json', buildInsights(jobs, skills, NOW)); writeJson('hiring.json', { updated: NOW, list: buildHiring(jobs, firstSeen, NOW) });
+  const cur = { open, boards: Object.keys(results).length, boardsOk: Object.values(results).filter(r => r.ok).length, failed: failed.slice(0, 20), fetched: fetched.length };
+  const health = updateHealth(health0, cur, results, NOW); writeJson('health.json', health);
+  writeJson('status.json', { updated: NOW, boards: Object.keys(boards).length, boardsOk: cur.boardsOk, skipped: skipped.length, failed: failed.slice(0, 60), discovered: found, probed: todo.length, open, closed: jobs.length - open, alert: health.alert });
+  console.log(`boards ${cur.boardsOk}/${Object.keys(boards).length}, discovered ${found}/${todo.length}, jobs open ${open}, closed ${jobs.length - open}, failed ${failed.length}`);
 }
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) main().catch(e => { console.error(e); process.exit(1); });

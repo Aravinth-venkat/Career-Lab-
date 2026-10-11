@@ -1,0 +1,9 @@
+{"queries":[
+ {"q":"fresher hiring India","tag":"Freshers"},
+ {"q":"campus hiring India IT companies","tag":"Freshers"},
+ {"q":"walk-in drive India jobs","tag":"Walk-in"},
+ {"q":"IT hiring outlook India skills in demand","tag":"Market"},
+ {"q":"layoffs hiring slowdown India tech jobs","tag":"Market"}
+],
+"blockWords":["casino","betting","lottery","loan app","crypto giveaway","adult"],
+"maxAgeDays":10,"maxPending":40,"maxNotes":30}

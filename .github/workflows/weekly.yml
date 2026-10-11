@@ -1,0 +1,24 @@
+name: Weekly report
+on:
+  schedule:
+    - cron: '37 2 * * 1'
+  workflow_dispatch: {}
+permissions:
+  contents: read
+  issues: write
+jobs:
+  report:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Open the weekly report issue
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          node scripts/weekly-report.mjs > /tmp/report.md
+          for N in $(gh issue list --state open --search "Padimachi weekly report in:title" --json number,title -q '.[] | select(.title|startswith("Padimachi weekly report")) | .number'); do gh issue close "$N" --comment "Superseded by this week's report."; done
+          gh issue create --title "Padimachi weekly report $(date -u +%Y-%m-%d)" --body-file /tmp/report.md
