@@ -27,12 +27,8 @@ jobs:
           TITLE="🚨 Padimachi website check failed"
           NUM=$(gh issue list --state open --search "$TITLE in:title" --json number,title -q '.[] | select(.title=="'"$TITLE"'") | .number' | head -1)
           if [ "$RESULT" = "failure" ]; then
-            BODY="The daily check of padimachi.com found a problem:
-
-$(cat /tmp/monitor.txt)
-
-This issue closes by itself when the next check is healthy."
-            if [ -z "$NUM" ]; then gh issue create --title "$TITLE" --body "$BODY"; else gh issue comment "$NUM" --body "$BODY"; fi
+            { echo "The daily check of padimachi.com found a problem:"; echo; cat /tmp/monitor.txt; echo; echo "This issue closes by itself when the next check is healthy."; } > /tmp/body.md
+            if [ -z "$NUM" ]; then gh issue create --title "$TITLE" --body-file /tmp/body.md; else gh issue comment "$NUM" --body-file /tmp/body.md; fi
           elif [ -n "$NUM" ]; then gh issue close "$NUM" --comment "Recovered. The latest check was healthy."; fi
       - name: Save the last result
         continue-on-error: true
