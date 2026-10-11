@@ -1,0 +1,24 @@
+name: Backup live site (dev-platform)
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Restore point tag name
+        default: restore-point
+permissions:
+  contents: write
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: main
+      - name: Save restore point and dev-platform branch
+        run: |
+          git config user.name "padimachi-backup-bot"
+          git config user.email "noreply@users.noreply.github.com"
+          git tag -f "${{ github.event.inputs.tag }}" HEAD
+          git push -f origin "refs/tags/${{ github.event.inputs.tag }}"
+          git push -f origin HEAD:refs/heads/dev-platform
