@@ -11,7 +11,7 @@ const ROOT = process.env.JOBS_ROOT || path.join(HERE, '..');
 const DATA = path.join(ROOT, 'data');
 const NOW = Date.now(), DAY = 864e5;
 const UA = 'PadimachiJobsBot/1.0 (+https://padimachi.com)';
-const MAX_JOBS = +process.env.MAX_JOBS || 5000, PROBE_PER_RUN = +process.env.PROBE_PER_RUN || 120, DESC = 500;
+const MAX_JOBS = +process.env.MAX_JOBS || 5000, PROBE_PER_RUN = +process.env.PROBE_PER_RUN || 260, DESC = 500;
 const INDIA = /india|bengaluru|bangalore|chennai|hyderabad|pune|mumbai|navi mumbai|thane|delhi|gurugram|gurgaon|noida|ghaziabad|kolkata|coimbatore|kochi|cochin|thiruvananthapuram|trivandrum|ahmedabad|jaipur|indore|chandigarh|mohali|nagpur|lucknow|bhubaneswar|visakhapatnam|vizag|mysuru|mysore|madurai|trichy|tiruchirappalli|vadodara|surat|remote.*(ind|apac)/i;
 
 const readJson = (f, d) => { try { return JSON.parse(fs.readFileSync(path.join(DATA, f), 'utf8')); } catch { return d; } };
@@ -37,6 +37,18 @@ export const PROV = {
     url: s => `https://api.lever.co/v0/postings/${s}?mode=json`,
     map: (j, s, co) => (Array.isArray(j) ? j : []).map(x => ({ id: 'lv:' + s + ':' + x.id, c: co, t: x.text, l: (x.categories && (x.categories.location || (x.categories.allLocations || []).join(', '))) || '', u: safeUrl(x.hostedUrl), a: safeUrl(x.applyUrl), p: +x.createdAt || 0, d: plain(x.descriptionPlain || x.description).slice(0, DESC) })),
   },
+  wk: {
+    url: s => `https://apply.workable.com/api/v1/widget/accounts/${s}?details=true`,
+    map: (j, s, co) => (j.jobs || []).map(x => ({ id: 'wk:' + s + ':' + (x.shortcode || x.code), c: co, t: x.title, l: [x.city, x.state, x.country].filter(Boolean).join(', '), u: safeUrl(x.url || x.shortlink), a: safeUrl(x.application_url), p: Date.parse(x.published_on || x.created_at) || 0, d: plain(x.description).slice(0, DESC) })),
+  },
+  rc: {
+    url: s => `https://${s}.recruitee.com/api/offers/`,
+    map: (j, s, co) => (j.offers || []).filter(x => !x.status || x.status === 'published').map(x => ({ id: 'rc:' + s + ':' + x.id, c: co, t: x.title, l: [x.city, x.country].filter(Boolean).join(', ') || x.location || '', u: safeUrl(x.careers_url), a: safeUrl(x.careers_apply_url), p: Date.parse(x.published_at || x.created_at) || 0, d: plain(x.description).slice(0, DESC) })),
+  },
+  sr: {
+    url: s => `https://api.smartrecruiters.com/v1/companies/${s}/postings?limit=100&country=in`,
+    map: (j, s, co) => (j.content || []).map(x => ({ id: 'sr:' + s + ':' + x.id, c: co, t: x.name, l: [x.location && x.location.city, x.location && x.location.region, 'India'].filter(Boolean).join(', '), u: safeUrl(`https://jobs.smartrecruiters.com/${s}/${x.id}`), p: Date.parse(x.releasedDate) || 0, d: '' })),
+  },
   ab: {
     url: s => `https://api.ashbyhq.com/posting-api/job-board/${s}`,
     map: (j, s, co) => (j.jobs || []).filter(x => x.isListed !== false).map(x => ({ id: 'ab:' + s + ':' + x.id, c: co, t: x.title, l: x.location || '', u: safeUrl(x.jobUrl), a: safeUrl(x.applyUrl), p: Date.parse(x.publishedAt) || 0, d: plain(x.descriptionPlain || x.descriptionHtml).slice(0, DESC) })),
@@ -55,8 +67,9 @@ const norm = s => String(s).toLowerCase().replace(/[^a-z0-9]/g, '');
 
 async function pool(items, n, fn) { let i = 0; await Promise.all(Array.from({ length: n }, async () => { while (i < items.length) { const k = i++; await fn(items[k], k); } })); }
 
-export async function probe(company, boards) {
-  for (const s of slugs(company)) for (const p of ['gh', 'lv', 'ab']) {
+export async function probe(company, boards, hints = []) {
+  for (const h of hints) { const [p, s] = h.split(':'); if (!PROV[p]) continue; const r = await get(PROV[p].url(s)); await sleep(120); if (!r.ok) continue; const jobs = PROV[p].map(r.json, s, company); if (jobs.some(j => INDIA.test(j.l))) { boards[p + ':' + s] = company; return true; } }
+  for (const s of slugs(company)) for (const p of ['gh', 'lv', 'ab', 'wk', 'rc', 'sr']) {
     const r = await get(PROV[p].url(s)); await sleep(120);
     if (!r.ok) continue;
     const jobs = PROV[p].map(r.json, s, company);
@@ -90,10 +103,12 @@ export async function main() {
   const boards = readJson('boards.json', {}), manual = readJson('boards-manual.json', {}), miss = readJson('boards-miss.json', {});
   Object.assign(boards, manual);
   // discover boards for a rolling slice of companies that are not known and not recently missed
+  const cand = (() => { try { return JSON.parse(fs.readFileSync(path.join(HERE, 'candidates.json'), 'utf8')); } catch { return {}; } })();
   const known = new Set(Object.values(boards).map(norm));
-  const todo = names.filter(n => !known.has(norm(n)) && !(miss[n] && NOW - miss[n] < 14 * DAY)).slice(0, PROBE_PER_RUN);
+  const all = [...Object.keys(cand), ...names.filter(n => !(n in cand))];
+  const todo = all.filter(n => !known.has(norm(n)) && !(miss[n] && NOW - miss[n] < 14 * DAY)).slice(0, PROBE_PER_RUN);
   let found = 0;
-  await pool(todo, 4, async n => { if (await probe(n, boards)) found++; else miss[n] = NOW; });
+  await pool(todo, 4, async n => { if (await probe(n, boards, cand[n] || [])) found++; else miss[n] = NOW; });
   // fetch all known boards
   const prev = (readJson('jobs.json', { jobs: [] }).jobs) || [], fetched = [], ok = new Set(), failed = [];
   await pool(Object.entries(boards), 6, async ([key, company]) => {
