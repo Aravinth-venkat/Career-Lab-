@@ -35,4 +35,25 @@ export async function run({ token, chat, now = Date.now(), f = fetch, root = ROO
   list.forEach(j => { st.posted[j.id] = now; }); fs.mkdirSync(data, { recursive: true }); fs.writeFileSync(path.join(data, 'telegram.json'), JSON.stringify(st));
   return { posted: list.length };
 }
-if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) { const r = await run({ token: process.env.TELEGRAM_BOT_TOKEN, chat: process.env.TELEGRAM_CHAT_ID, test: process.env.TG_TEST === 'true' }); console.log(JSON.stringify(r)); if (r.error) process.exit(1); }
+// Optional extra channels by field, and one weekly top-skills post. Each needs its own chat id; none is posted until it is set.
+export const FIELDS = { freshers: { label: 'Fresher openings', test: j => classify(j).fresher }, servicenow: { label: 'ServiceNow openings', test: j => /service[- ]?now|\bsnow\b|\bitsm\b|\bcmdb\b/i.test(String(j.t || '') + ' ' + String(j.d || '').slice(0, 600)) } };
+export function skillsMessage(skills, now, n = 8) {
+  const top = (skills || []).slice(0, n); if (!top.length) return '';
+  return `<b>Top skills employers asked for this week</b>\n\n${top.map((x, i) => `${i + 1}. ${H(x[0])} (${+x[1]} openings)`).join('\n')}\n\nSee which ones your resume is missing (it stays on your phone): <a href="${SITE}/#/report">padimachi.com</a>`;
+}
+export async function runAll({ token, chat, chats = {}, weekly = false, now = Date.now(), f = fetch, root = ROOT, test = false } = {}) {
+  const main = await run({ token, chat, now, f, root, test }); if (!token || test) return { main };
+  const data = path.join(root, 'data'); let jobs = [], st = { posted: {} };
+  try { jobs = JSON.parse(fs.readFileSync(path.join(data, 'jobs.json'), 'utf8')).jobs || []; } catch {}
+  try { st = JSON.parse(fs.readFileSync(path.join(data, 'telegram.json'), 'utf8')); } catch {}
+  st.f = st.f || {}; const out = { main }; const send = async (cid, text) => f(`https://api.telegram.org/bot${token}/sendMessage`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ chat_id: cid, text, parse_mode: 'HTML', disable_web_page_preview: true }) });
+  for (const [k, spec] of Object.entries(FIELDS)) {
+    const cid = chats[k]; if (!cid) continue; const posted = st.f[k] = st.f[k] || {}; for (const id of Object.keys(posted)) if (now - posted[id] > 30 * DAY) delete posted[id];
+    const list = pick(jobs.filter(spec.test), posted, now); if (!list.length) { out[k] = { posted: 0 }; continue; }
+    const m = message(list, now).replace('New openings', spec.label); const r = await send(cid, m);
+    if (!r.ok) { out[k] = { error: 'Telegram answered ' + r.status }; continue; } list.forEach(j => { posted[j.id] = now; }); out[k] = { posted: list.length };
+  }
+  if (weekly && chat) { const wk = new Date(now).toISOString().slice(0, 10), last = st.weekly || ''; if (!last || now - Date.parse(last) >= 6 * DAY) { let sk = []; try { sk = JSON.parse(fs.readFileSync(path.join(data, 'insights.json'), 'utf8')).skills || []; } catch {} const m = skillsMessage(sk, now); if (m) { const r = await send(chat, m); if (r.ok) { st.weekly = wk; out.weekly = 'sent'; } else out.weekly = { error: 'Telegram answered ' + r.status }; } } else out.weekly = 'already sent'; }
+  fs.mkdirSync(data, { recursive: true }); fs.writeFileSync(path.join(data, 'telegram.json'), JSON.stringify(st)); return out;
+}
+if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) { const e = process.env, r = await runAll({ token: e.TELEGRAM_BOT_TOKEN, chat: e.TELEGRAM_CHAT_ID, chats: { freshers: e.TELEGRAM_CHAT_FRESHERS, servicenow: e.TELEGRAM_CHAT_SERVICENOW }, weekly: e.TG_WEEKLY === 'true' || new Date().getUTCDay() === 1, test: e.TG_TEST === 'true' }); console.log(JSON.stringify(r)); if (JSON.stringify(r).includes('"error"')) process.exit(1); }

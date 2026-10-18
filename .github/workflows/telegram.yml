@@ -7,6 +7,9 @@ on:
       test:
         description: Send a short test message only
         default: 'false'
+      weekly:
+        description: Also send the weekly top-skills post now
+        default: 'false'
 permissions:
   contents: write
 concurrency:
@@ -25,6 +28,9 @@ jobs:
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          TELEGRAM_CHAT_FRESHERS: ${{ secrets.TELEGRAM_CHAT_FRESHERS }}
+          TELEGRAM_CHAT_SERVICENOW: ${{ secrets.TELEGRAM_CHAT_SERVICENOW }}
+          TG_WEEKLY: ${{ github.event.inputs.weekly }}
           TG_TEST: ${{ github.event.inputs.test }}
         run: node scripts/telegram-post.mjs
       - name: Remember what was posted
