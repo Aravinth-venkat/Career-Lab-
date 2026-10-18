@@ -3,6 +3,7 @@ Uses the free Microsoft neural voices through edge-tts. Skips lines that already
 Hash and sentence splitting match js/avatar.js exactly."""
 import asyncio, json, os, re, subprocess, sys, tempfile
 
+LAST = []
 ROOT = os.environ.get('SITE_ROOT', '.')
 VOICES = {'m': 'en-IN-PrabhatNeural', 'f': 'en-IN-NeerjaNeural'}
 M32 = 0xFFFFFFFF
@@ -47,7 +48,7 @@ async def make(text, voice, out):
 async def main():
     lines = json.load(open(os.path.join(ROOT, 'scripts', 'voice-lines.json')))
     ixp = os.path.join(ROOT, 'voice', 'index.json'); ix = json.load(open(ixp))
-    made = 0
+    made = 0; failed = []
     for line in lines:
         for s in vsplit(line):
             h = vhash(vnorm(s))
@@ -58,12 +59,16 @@ async def main():
                 for attempt in range(3):
                     try: await make(s, voice, out); break
                     except Exception as e:
-                        print('retry', g, s[:40], e); await asyncio.sleep(2)
-                else: continue
+                        LAST[:] = [type(e).__name__ + ': ' + str(e)[:160]]; print('retry', g, s[:40], e); await asyncio.sleep(2)
+                else:
+                    failed.append(g + ':' + s[:40]); continue
                 ix[g].append(h); made += 1; print('made', g, h, s[:50])
     for g in ix: ix[g] = sorted(set(ix[g]))
     json.dump(ix, open(ixp, 'w'), separators=(',', ':'))
     print('clips made:', made)
+    if failed:
+        print('::error::could not make ' + str(len(failed)) + ' clips, first: ' + failed[0] + ' | last error: ' + str(LAST[0] if LAST else ''))
+        sys.exit(1)
 
 if __name__ == '__main__':
     asyncio.run(main())
