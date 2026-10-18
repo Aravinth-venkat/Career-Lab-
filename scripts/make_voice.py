@@ -43,7 +43,9 @@ async def make(text, voice, out):
     with tempfile.TemporaryDirectory() as d:
         raw = os.path.join(d, 'a.mp3')
         await edge_tts.Communicate(text, voice, rate='-4%').save(raw)
-        subprocess.run(['ffmpeg', '-v', 'error', '-y', '-i', raw, '-ar', '24000', '-ac', '1', '-b:a', '40k', out], check=True)
+        try: subprocess.run(['ffmpeg', '-v', 'error', '-y', '-i', raw, '-ar', '24000', '-ac', '1', '-b:a', '40k', out], check=True)
+        except FileNotFoundError:
+            import shutil; shutil.copy(raw, out)  # edge-tts already gives a small 24 kHz mp3
 
 async def main():
     lines = json.load(open(os.path.join(ROOT, 'scripts', 'voice-lines.json')))

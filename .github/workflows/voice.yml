@@ -16,7 +16,9 @@ jobs:
         with:
           python-version: '3.12'
       - name: Install the free voice tool
-        run: pip install edge-tts
+        run: |
+          pip install edge-tts
+          which ffmpeg || (sudo apt-get update -q && sudo apt-get install -y -q ffmpeg) || true
       - name: Make clips for new lines
         run: python scripts/make_voice.py
       - name: Save the clips
