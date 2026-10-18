@@ -138,7 +138,8 @@ export function merge(prev, fetched, okBoards, now) {
 }
 
 export async function main() {
-  const names = JSON.parse(fs.readFileSync(path.join(HERE, 'company-names.json'), 'utf8'));
+  let names = JSON.parse(fs.readFileSync(path.join(HERE, 'company-names.json'), 'utf8'))
+  try { names = [...names, ...JSON.parse(fs.readFileSync(path.join(HERE, 'company-extra.json'), 'utf8'))]; } catch {}
   const boards = readJson('boards.json', {}), manual = readJson('boards-manual.json', {}), miss = readJson('boards-miss.json', {});
   Object.assign(boards, manual);
   // discover boards for a rolling slice of companies that are not known and not recently missed

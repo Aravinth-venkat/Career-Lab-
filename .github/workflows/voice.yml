@@ -1,0 +1,27 @@
+name: Make voice clips
+on:
+  workflow_dispatch: {}
+  push:
+    paths:
+      - 'scripts/voice-lines.json'
+permissions:
+  contents: write
+jobs:
+  voice:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install the free voice tool
+        run: pip install edge-tts
+      - name: Make clips for new lines
+        run: python scripts/make_voice.py
+      - name: Save the clips
+        run: |
+          git config user.name "padimachi-voice-bot"
+          git config user.email "noreply@users.noreply.github.com"
+          git add voice
+          if git diff --cached --quiet; then echo "no new clips"; else git commit -m "New voice clips"; git pull -q --rebase || true; git push; fi
