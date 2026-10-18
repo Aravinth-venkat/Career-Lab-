@@ -5,7 +5,7 @@ export const isExpired = (status, body) => status === 404 || status === 410 || (
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 export async function verify(jobs, { cap = 150, now = Date.now(), getPage, minAgeDays = 3, recheckDays = 6 } = {}) {
   const DAY = 864e5, due = jobs.filter(j => !j.x && j.u && !/^wd:/.test(j.id) && now - (j.s || 0) > 0 && now - (j.p || j.s || 0) > minAgeDays * DAY && now - (j.v || 0) > recheckDays * DAY).sort((a, b) => ((/^sr:/.test(a.id) ? 0 : 1) - (/^sr:/.test(b.id) ? 0 : 1)) || (a.v || 0) - (b.v || 0) || (a.p || 0) - (b.p || 0)).slice(0, cap);
-  const closed = []; let i = 0, checked = 0;
-  await Promise.all(Array.from({ length: 4 }, async () => { while (i < due.length) { const j = due[i++]; const r = await getPage(j.u); await sleep(60); if (!r || !r.status) continue; if (r.status === 403 || r.status === 429 || r.status >= 500) continue; checked++; if (isExpired(r.status, r.body)) { j.x = now; j.xv = 1; closed.push(j.id); } else j.v = now; } }));
-  return { checked, closed };
+  const closed = [], fixed = []; let i = 0, checked = 0;
+  await Promise.all(Array.from({ length: 4 }, async () => { while (i < due.length) { const j = due[i++]; const r = await getPage(j.u); await sleep(60); if (!r || !r.status) continue; if (r.status === 403 || r.status === 429 || r.status >= 500) continue; checked++; if (isExpired(r.status, r.body)) { j.x = now; j.xv = 1; closed.push(j.id); } else { j.v = now; if (j.a && j.a !== j.u && /^https:/.test(j.a)) { const r2 = await getPage(j.a); await sleep(60); if (r2 && (r2.status === 404 || r2.status === 410)) { j.af = now; delete j.a; fixed.push(j.id); } } } } }));
+  return { checked, closed, fixed };
 }
