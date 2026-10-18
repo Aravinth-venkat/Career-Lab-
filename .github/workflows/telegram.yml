@@ -2,7 +2,11 @@ name: Telegram digest
 on:
   schedule:
     - cron: '30 3 * * *'
-  workflow_dispatch: {}
+  workflow_dispatch:
+    inputs:
+      test:
+        description: Send a short test message only
+        default: 'false'
 permissions:
   contents: write
 concurrency:
@@ -21,6 +25,7 @@ jobs:
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          TG_TEST: ${{ github.event.inputs.test }}
         run: node scripts/telegram-post.mjs
       - name: Remember what was posted
         run: |
