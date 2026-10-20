@@ -1,0 +1,58 @@
+/* Extra styles for pagesC (ladder, journey, progress, practice, mock, speaking) */
+.hero.one{grid-template-columns:1fr}
+.ringc{--p:0;--c:var(--acc);width:104px;height:104px;border-radius:50%;display:grid;place-items:center;flex:none;background:conic-gradient(var(--c) calc(var(--p)*1%),var(--line) 0)}
+.ringc>div{width:82px;height:82px;border-radius:50%;background:var(--card);display:grid;place-content:center;text-align:center;line-height:1.1}
+.ringc b{font-size:1.5rem}.ringc small{font-size:.68rem;color:var(--dim)}
+.rings{display:flex;gap:14px;flex-wrap:wrap;justify-content:center}
+.meter{margin:10px 0}.meter span{display:flex;justify-content:space-between;font-size:.9rem;margin-bottom:4px}
+.meters{flex:1;min-width:200px}
+.res{align-items:center;margin:8px 0}
+.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(125px,1fr));gap:12px}
+.tile{margin:0;padding:14px 16px}.tile .tn{font-size:1.5rem}
+.badge{padding:14px 8px;border-radius:16px;border:1px solid var(--line);background:var(--card);text-align:center;display:grid;gap:4px;opacity:.45;filter:grayscale(1)}.badge.on{opacity:1;filter:none;border-color:var(--acc)}.badge b{font-size:1.8rem}
+.weak{display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--line);color:var(--txt)}
+.bigp{font-size:1.5rem;font-weight:800;margin:.2em 0}
+.center{text-align:center}
+.chipsr{gap:8px}.chipsr .chip{cursor:default;min-height:34px;padding:5px 12px;font-size:.88rem}.chip.g{border-color:var(--good);color:var(--good)}.chip.r{border-color:var(--bad);color:var(--bad)}.chip.y{border-color:var(--warn);color:var(--warn)}
+a.chip{cursor:pointer}
+.tcard{display:block;color:var(--txt);margin:0}.tcard:hover{border-color:var(--acc)}.tcard .ic{font-size:1.8rem}
+.plist{padding-left:20px;margin:6px 0}.mist{padding-left:20px;margin:8px 0}.mist.ok li::marker{color:var(--good)}
+.step{padding:10px 12px;border-radius:12px;background:var(--card2);border:1px solid var(--line);margin:8px 0}
+.hint{padding:10px 12px;border-radius:12px;background:color-mix(in srgb,var(--warn) 10%,var(--card2));margin:8px 0;font-size:.93rem}
+.fbtxt{margin:10px 0}
+.qtext{margin:10px 0 4px}
+.tm{font-weight:800;color:var(--warn)}
+.mhead{font-weight:700;font-size:.9rem;color:var(--dim);margin-bottom:8px}
+pre{background:var(--card2);padding:12px;border-radius:12px;overflow:auto;font-size:.88rem}
+.opt b{display:inline-block;width:26px;color:var(--acc)}
+.opt:disabled{cursor:default;opacity:1}
+.flip{display:grid;place-items:center;width:100%;min-height:170px;margin-top:14px;padding:20px;border-radius:18px;border:1px solid var(--line);background:var(--card2);color:var(--txt);font:inherit;cursor:pointer;text-align:center}
+.flip span{display:grid;gap:8px}.flip b{font-size:1.25rem}.flip.on{background:color-mix(in srgb,var(--acc) 14%,var(--card2));border-color:var(--acc)}
+.week{display:flex;gap:8px;margin:12px 0}.wd{flex:1;text-align:center;font-size:.75rem;color:var(--dim)}.wd i{display:grid;place-items:center;height:30px;border-radius:10px;background:var(--card2);font-style:normal;margin-bottom:3px}.wd.on i{background:color-mix(in srgb,var(--warn) 25%,var(--card2))}.wd.now span{color:var(--acc);font-weight:800}
+.ans textarea{min-height:110px}.ans-bar{margin-top:8px}.ans-bar .live{flex:1;min-width:120px}
+.btn.mic.rec{background:var(--bad);color:#fff;animation:cpulse 1.2s infinite}
+@keyframes cpulse{50%{opacity:.7}}
+.coach{margin-top:10px;padding:10px 12px;border-radius:14px;border:1px solid var(--line);background:var(--card2)}.coach summary{cursor:pointer;font-weight:700}
+.steps{padding-left:22px}.result details{margin:10px 0}.result summary{cursor:pointer;font-weight:700}
+.avrow{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin:8px 0}
+.avatar{width:64px;height:64px;border-radius:50%;display:grid;place-items:center;font-size:2.1rem;background:linear-gradient(135deg,var(--acc2),var(--acc));flex:none}
+.avatar.talk{animation:ctalk .5s infinite alternate}
+@keyframes ctalk{to{transform:scale(1.1);box-shadow:0 0 0 8px color-mix(in srgb,var(--acc) 25%,transparent)}}
+.read{font-size:1.25rem;font-weight:600;line-height:1.6}.read.sm{font-size:1rem;font-weight:500}.read .miss{color:var(--bad);text-decoration:underline}.read .ok{color:var(--good)}
+.labs{display:grid;gap:8px;margin:10px 0}
+.chk{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:12px;border:1px solid var(--line);background:var(--card2);font-weight:500;cursor:pointer}.chk.on{border-color:var(--good);background:color-mix(in srgb,var(--good) 12%,var(--card2))}.chk input{width:20px;height:20px;flex:none;padding:0}
+.ladder{display:grid;gap:10px}
+.rung{border:1px solid var(--line);border-radius:16px;padding:6px 14px;background:var(--card)}.rung.here{border-color:var(--acc);background:color-mix(in srgb,var(--acc) 10%,var(--card))}.rung.next{border-color:var(--warn)}.rung.done{opacity:.8}
+.rung summary{display:flex;align-items:center;gap:12px;cursor:pointer;padding:8px 0;list-style:none;flex-wrap:wrap}.rung summary::-webkit-details-marker{display:none}
+.lvno{width:30px;height:30px;border-radius:50%;display:grid;place-items:center;background:var(--card2);font-weight:800;flex:none}.rt{display:grid;flex:1;min-width:140px}.rt small{color:var(--dim)}
+.qa summary{cursor:pointer;font-weight:700;padding:6px 0}
+.road{display:grid;gap:0;margin:10px 0}.rstep{display:flex;gap:14px;padding-bottom:16px;position:relative}.rstep:not(:last-child)::before{content:"";position:absolute;left:15px;top:32px;bottom:0;width:2px;background:var(--line)}
+.rdot{width:32px;height:32px;border-radius:50%;display:grid;place-items:center;background:var(--card2);border:2px solid var(--line);flex:none;font-weight:800;z-index:1}
+.rstep.done .rdot{background:var(--good);border-color:var(--good);color:#04200f}.rstep.here .rdot{border-color:var(--acc);background:var(--card)}.rstep.next .rdot{border-color:var(--warn)}
+.rbody{flex:1;min-width:0}
+.idea{margin:0}
+#ctoast{position:fixed;left:12px;right:12px;bottom:90px;z-index:80;display:grid;gap:8px;justify-items:center;pointer-events:none}
+#ctoast .ct{background:var(--card2);color:var(--txt);border:1px solid var(--line);padding:10px 16px;border-radius:14px;box-shadow:var(--sh);max-width:440px;font-weight:600}
+#ctoast .ct.buddy{border-color:var(--acc)}
+#cfx{position:fixed;inset:0;pointer-events:none;z-index:90}
+@media (min-width:900px){#ctoast{bottom:24px}}
