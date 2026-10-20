@@ -156,19 +156,7 @@ function Topic({ id }) {
   </>;
 }
 
-/* ---------- Interview ---------- */
-function Interview() {
-  const { S, set } = useS(); const pool = useMemo(() => D.OPEN.filter(q => q.q && q.keys && q.m && (!q.track || !S.track || q.track === S.track || q.cat !== 'Technical')), [S.track]);
-  const [i, setI] = useState(() => Math.floor(Math.random() * pool.length)), [txt, setTxt] = useState(''), [g, setG] = useState(null); const q = pool[i % pool.length];
-  const check = () => { const r = C.grade(txt, q.keys); setG(r); if (r.words >= 8) set(o => ({ dims: [...(o.dims || []), { o: r.overall }].slice(-60), xp: (o.xp || 0) + 5 })); };
-  const Bar = ({ l, v }) => <div style={{ margin: '8px 0' }}><div className="row" style={{ justifyContent: 'space-between' }}><span className="sm">{l}</span><span className="sm dim">{Math.round(v * 100)}%</span></div><div className="bar"><i style={{ width: v * 100 + '%' }} /></div></div>;
-  return <><h1>🎤 Interview practice</h1><p className="dim">Answer in your own words. You get feedback on knowledge, clarity and reasoning.</p>
-    <div className="card"><span className="tag">{q.cat}</span><h2 style={{ marginTop: 10 }}>{q.q}</h2><textarea style={{ minHeight: 140 }} placeholder="Type your answer…" value={txt} onChange={e => setTxt(e.target.value)} />
-      <div className="row" style={{ marginTop: 12 }}><button className="btn primary" onClick={check} disabled={txt.trim().length < 5}>Check my answer</button><button className="btn" onClick={() => { setI(Math.floor(Math.random() * pool.length)); setTxt(''); setG(null); }}>Another question</button></div></div>
-    {g && <div className="card"><h3>Your feedback</h3><Bar l="Knowledge" v={g.know} /><Bar l="Confidence" v={g.conf} /><Bar l="Reasoning" v={g.reason} /><Bar l="Clarity" v={g.clar} />
-      {g.miss.length > 0 && <p className="sm"><b>Ideas to add:</b> {g.miss.slice(0, 5).join(', ')}</p>}<div className="note"><b>A strong answer:</b> {q.m}</div></div>}</>;
-}
-
+import Interview from './interviewPage.jsx';
 /* ---------- Resume and report ---------- */
 function Preview({ pages, w }) {
   return <div className="rpages">{pages.map((p, i) => <svg key={i} viewBox={`0 0 ${PAGE.w} ${PAGE.h}`} className="rpage" style={{ maxWidth: w }}><rect width={PAGE.w} height={PAGE.h} fill="#fff" />{p.map((o, k) => o.t === 'rect' ? <rect key={k} x={o.x} y={o.y} width={o.w} height={o.h} fill={rgb(o.col)} /> : o.t === 'line' ? <line key={k} x1={o.x1} x2={o.x2} y1={o.y} y2={o.y} stroke={rgb(o.col)} strokeWidth={o.w} /> : <text key={k} x={o.x} y={o.y} fontSize={o.size} fill={rgb(o.col)} fontFamily={CSSF[o.f]} fontWeight={o.f === 'F2' || o.f === 'F4' ? 700 : 400} xmlSpace="preserve">{o.s.replace(/\x01/g, '\u2022')}</text>)}</svg>)}</div>;
