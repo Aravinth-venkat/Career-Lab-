@@ -42,6 +42,13 @@ function Shell({ route, children }) {
   </div>;
 }
 
+function ResumeCard({ slim }) {
+  const { S } = useS(); const pages = useMemo(() => { try { return layout(parse(S.resume, C.extractSkills(S.resume, D.SKILLS)), (() => { try { return localStorage.getItem('pm_tpl') || 'modern'; } catch (e) { return 'modern'; } })(), (() => { try { return JSON.parse(localStorage.getItem('pm_ropt')) || {}; } catch (e) { return {}; } })()); } catch (e) { return null; } }, [S.resume]);
+  if (!pages) return null;
+  return <section className="card rcard"><a href="#/resumepdf" className="rthumb" aria-label="Open resume maker"><Preview pages={[pages[0]]} w={150} /></a>
+    <div><span className="tag alt">Resume maker</span><h3 style={{ margin: '8px 0 6px' }}>Your resume is ready to polish</h3><p className="dim sm">9 templates, your colours, and a download as PDF or Word. Most hiring software reads a clean one-column resume best.</p>
+      <div className="row"><a className="btn primary" href="#/resumepdf">Choose a template</a>{!slim && <a className="btn" href="#/resumepdf">⬇️ Download</a>}</div></div></section>;
+}
 /* ---------- Home ---------- */
 const QA = { fresher: [['🌱 Fresher jobs', '#/career'], ['🎤 Practise', '#/interview'], ['📚 Learn', '#/learn']], exp: [['💼 Matched jobs', '#/career'], ['📊 My report', '#/report'], ['💵 Check CTC', '#/ctc']], senior: [['💼 Matched roles', '#/career'], ['💵 Compare offers', '#/ctc'], ['📌 My applications', '#/tracker']] };
 const TITLE = { fresher: 'Start your career: openings for you', exp: 'Your next move: roles that fit your experience', senior: 'Your next level: roles, pay and offers' };
@@ -59,6 +66,7 @@ function Home() {
       </div>
       <div className="heroart" style={{ textAlign: 'center', fontSize: '5rem' }}>🎯</div>
     </section>
+    {has && <ResumeCard />}
     {jobs && <p className="dim sm" style={{ margin: '4px 4px 0' }}><b>{jobs.length.toLocaleString('en-IN')}</b> jobs open today from <b>{cos}</b> companies</p>}
     <section className="card"><div className="row" style={{ justifyContent: 'space-between' }}><b>Your path</b><span className="dim sm">{n} of 5 done</span></div><div className="bar" style={{ margin: '10px 0' }}><i style={{ width: n * 20 + '%' }} /></div>
       <ol className="path">{st.map((x, i) => <li key={i} className={x[0] ? 'done' : i === nx ? 'now' : ''}><a href={x[3]}><span className="pi">{x[0] ? '✓' : x[1]}</span>{x[2]}</a></li>)}</ol>
@@ -168,7 +176,7 @@ const accentOf = k => ACC[k] || ACC.modern;
 const rgb = c => `rgb(${c.map(v => Math.round(v * 255)).join(',')})`;
 function ResumePdf() {
   const { S, set } = useS(); const [txt, setTxt] = useState(S.resume || ''), [tpl, setTpl] = useState(() => { try { return localStorage.getItem('pm_tpl') || 'modern'; } catch (e) { return 'modern'; } }), [edit, setEdit] = useState(!S.resume);
-  const words = txt.trim().split(/\s+/).length, ok = words >= 20;
+  const [just, setJust] = useState(false); const words = txt.trim().split(/\s+/).length, ok = words >= 20;
   const a = useMemo(() => { try { return words > 10 ? C.analyzeResume(txt, D.SKILLS) : null; } catch (e) { return null; } }, [txt]);
   const [doc, setDoc] = useState(null), [opt, setOpt] = useState(() => { try { return JSON.parse(localStorage.getItem('pm_ropt')) || {}; } catch (e) { return {}; } });
   useEffect(() => { setDoc(ok ? parse(txt, C.extractSkills(txt, D.SKILLS)) : null); }, [txt]);
@@ -178,10 +186,10 @@ function ResumePdf() {
   const dlw = () => { const u = docxBytes(doc, tpl, { ...opt, accent: opt.accent || accentOf(tpl) }), l = document.createElement('a'); l.href = URL.createObjectURL(new Blob([u], { type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' })); l.download = (doc.name || 'resume').replace(/\s+/g, '-') + '-resume.docx'; l.click(); };
   const dl = () => { const s = pdfFromPages(pages, doc.name + ' resume'), u = new Uint8Array(s.length); for (let k = 0; k < s.length; k++) u[k] = s.charCodeAt(k) & 255; const l = document.createElement('a'); l.href = URL.createObjectURL(new Blob([u], { type: 'application/pdf' })); l.download = (doc.name || 'resume').replace(/\s+/g, '-') + '-resume.pdf'; l.click(); };
   return <><h1>📄 Resume maker</h1><p className="dim">Add your resume once. Pick a template, check the preview, download a clean PDF. Nothing is uploaded.</p>
-    <div className="card"><b>1. Add your resume</b> <span className="dim sm">PDF, Word or text. Read on your device only.</span><ResumeUpload onText={t => { setTxt(t); setEdit(false); }} />
+    <div className="card"><b>1. Add your resume</b> <span className="dim sm">PDF, Word or text. Read on your device only.</span><ResumeUpload onText={t => { setTxt(t); setEdit(false); set({ resume: t, conf: 1 }); setJust(true); setTimeout(() => { const el = document.getElementById('tplstep'); el && el.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 400); }} />
       <div className="row" style={{ marginTop: 10 }}><button className="btn sm" onClick={() => setEdit(!edit)}>{edit ? 'Hide text' : '✏️ Edit text'}</button><button className="btn sm primary" disabled={!ok} onClick={() => set({ resume: txt, conf: 1 })}>{S.resume === txt && ok ? '✓ Saved' : 'Save my resume'}</button></div>
       {edit && <textarea style={{ marginTop: 10 }} placeholder="Or paste your resume text here" value={txt} onChange={e => setTxt(e.target.value)} />}</div>
-    {doc && <><div className="card"><b>2. Choose a template</b><div className="tplgrid">{TEMPLATES.map(([k, n, d]) => <button key={k} className={'tpl' + (tpl === k ? ' on' : '')} onClick={() => pick(k)}><span className="tn">{n}</span><span className="dim sm">{d}</span></button>)}</div>
+    {doc && <>{just && <div className="note okn"><b>✅ Resume read and saved on this device.</b> Now make it look professional: pick a template below, change colours or text, then download it as PDF or Word.</div>}<div className="card" id="tplstep"><b>2. Choose a template</b><div className="tplgrid">{TEMPLATES.map(([k, n, d]) => <button key={k} className={'tpl' + (tpl === k ? ' on' : '')} onClick={() => pick(k)}><span className="tn">{n}</span><span className="dim sm">{d}</span></button>)}</div>
       <div className="row" style={{ marginTop: 12 }}><button className="btn primary" onClick={dl}>⬇️ Download PDF ({pages.length} page{pages.length > 1 ? 's' : ''})</button><button className="btn primary" onClick={dlw}>⬇️ Download Word (.docx)</button></div>
       <p className="dim sm">The Word file is one column with the same colours and fonts. Sidebar, Timeline and Compact look like their Modern, Classic cousins in Word; use the PDF for the exact design.</p>
       <p className="dim sm">Found: {doc.sections.map(s => s.title).join(', ') || 'no sections'}. If a section is missing, put its heading on its own line (for example EXPERIENCE) and the preview updates.</p></div>
@@ -194,6 +202,7 @@ function Report() {
   if (!a) return <><h1>📊 Career report</h1><div className="card"><p>Add your resume to get your level, skills and a plan.</p><a className="btn primary" href="#/resumepdf">Add my resume</a></div></>;
   const tr = (C.detectTrack(S.resume, D.SKILLS)[0] || {}).track, tn = (D.TRACKS.find(t => t.id === tr) || {}).name || 'Your field', miss = D.SKILLS.filter(s => s.track === tr && !sk.includes(s.n)).slice(0, 6);
   return <><h1>📊 Your career report</h1><p className="dim">{tn} · about {y} year{y === 1 ? '' : 's'} · {MODEL[mode] || 'Getting started'}</p>
+    <ResumeCard slim />
     <div className="card row" style={{ gap: 20 }}><div className="score" style={{ '--p': a.score }}><span>{a.score}</span></div><div><h3>Resume score</h3><p className="dim sm">{sk.length} skills found.</p><a className="btn sm" href="#/resumepdf">Improve my resume</a></div></div>
     <h2>Skills you have</h2><div className="row">{sk.slice(0, 20).map(s => <span key={s} className="chip on">{s}</span>)}{!sk.length && <span className="dim">None found yet.</span>}</div>
     <h2>Skills to add next</h2><div className="row">{miss.map(s => <a key={s.n} className="chip" href="#/learn">➕ {s.n}</a>)}</div>

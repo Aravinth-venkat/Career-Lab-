@@ -57,3 +57,9 @@ textarea{min-height:220px;resize:vertical}label{display:grid;gap:6px;font-weight
 .rpages{display:flex;flex-direction:column;gap:14px;align-items:center;margin:14px 0}
 .rpage{width:100%;height:auto;border-radius:6px;box-shadow:0 6px 24px rgba(0,0,0,.35)}
 .sw{width:28px;height:28px;border-radius:50%;border:2px solid rgba(255,255,255,.4);cursor:pointer;padding:0}
+
+.rcard{display:grid;grid-template-columns:150px 1fr;gap:18px;align-items:center;border:1px solid var(--acc)}
+.rthumb{display:block;border-radius:6px;overflow:hidden;pointer-events:auto}
+.rcard .rpages{margin:0}.rcard .rpage{box-shadow:0 4px 14px rgba(0,0,0,.4)}
+.okn{border-left:4px solid #22c55e}
+@media(max-width:560px){.rcard{grid-template-columns:96px 1fr;gap:12px}}
