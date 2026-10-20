@@ -74,3 +74,6 @@ export function pdfBuild(text, title) {
   const x = out.length; out += `xref\n0 ${objs.length + 1}\n0000000000 65535 f \n` + off.map(o => String(o).padStart(10, '0') + ' 00000 n \n').join('') + `trailer\n<< /Size ${objs.length + 1} /Root 1 0 R /Info ${info} 0 R >>\nstartxref\n${x}\n%%EOF`;
   return out;
 }
+
+export const pdfEsc = esp;
+export const helvW = s => { let w = 0; for (const ch of s) { const c = ch.charCodeAt(0); w += c === 1 ? 350 : (c >= 32 && c < 127 ? W[c - 32] : 556); } return w; };
