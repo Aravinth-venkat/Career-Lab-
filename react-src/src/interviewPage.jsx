@@ -5,13 +5,15 @@ const GEN = ['HR', 'Behavioural', 'Situational', 'Fresher', 'Leadership', 'Telep
 const pct = v => Math.round(v * 100);
 const Bar = ({ l, v, tip }) => <div style={{ margin: '8px 0' }} title={tip}><div className="row" style={{ justifyContent: 'space-between' }}><span className="sm">{l}</span><span className="sm dim">{pct(v)}%</span></div><div className="bar"><i style={{ width: pct(v) + '%' }} /></div></div>;
 const copy = t => { try { navigator.clipboard.writeText(t); } catch (e) { } };
-export default function Interview() {
+export default function Interview({ arg }) {
+  const forced = arg && D.OPEN.find(x => x.id === arg);
   const { S, set } = useS(), mode = modeOf(S), saved = S.myans || {};
   const det = useMemo(() => { try { return S.resume ? (C.detectTrack(S.resume, D.SKILLS)[0] || {}).track : ''; } catch (e) { return ''; } }, [S.resume]);
-  const [track, setTrack] = useState(S.track || det || ''), [cat, setCat] = useState(mode === 'new' || mode === 'fresher' ? 'Fresher' : 'Technical');
+  const [track, setTrack] = useState(forced && forced.track || S.track || det || ''), [cat, setCat] = useState(forced ? forced.cat : mode === 'new' || mode === 'fresher' ? 'Fresher' : 'Technical');
   const [i, setI] = useState(0), [txt, setTxt] = useState(''), [g, setG] = useState(null), [fu, setFu] = useState(null), [help, setHelp] = useState(false), [view, setView] = useState('practice');
   const pool = useMemo(() => D.OPEN.filter(q => q.q && q.keys && q.m && (cat === 'Technical' ? q.cat === 'Technical' && (!track || q.track === track) : q.cat === cat)), [track, cat]);
   useEffect(() => { setI(0); setTxt(''); setG(null); setFu(null); }, [track, cat]);
+  useEffect(() => { if (forced) { const k = D.OPEN.filter(x => x.cat === forced.cat && (forced.cat !== 'Technical' || x.track === forced.track)).findIndex(x => x.id === forced.id); if (k >= 0) setI(k); } }, [arg]);
   const q = fu || pool[i % Math.max(1, pool.length)];
   const topic = q && D.TOPICS.find(t => t.id === q.topic), tn = (D.TRACKS.find(t => t.id === (q && q.track || track)) || {}).name;
   const related = useMemo(() => !q ? [] : D.OPEN.filter(x => x.id !== q.id && x.cat === q.cat && (q.cat !== 'Technical' || x.track === q.track) && x.topic === q.topic).slice(0, 4), [q]);

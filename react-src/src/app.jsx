@@ -82,16 +82,19 @@ function Home() {
 }
 
 /* ---------- Jobs ---------- */
+const ASK = new Map();
+const topTrack = names => { const c = {}; names.forEach(n => { const s = D.SKILLS.find(x => x.n === n); if (s) c[s.track] = (c[s.track] || 0) + 1; }); return Object.keys(c).sort((x, y) => c[y] - c[x])[0]; };
+const asksOf = j => { let r = ASK.get(j.id); if (!r) { try { r = C.extractSkills(j.t + ' ' + (j.d || ''), D.SKILLS); } catch (e) { r = []; } ASK.set(j.id, r); } return r; };
 function Jobs() {
-  const { S, set } = useS(); const jobs = useJobs(), mode = modeOf(S); const sk = useMemo(() => skillsOf(S), [S.resume]), skO = useMemo(() => D.SKILLS.filter(x => sk.includes(x.n)), [sk]);
+  const { S, set } = useS(); const jobs = useJobs(), mode = modeOf(S); const sk = useMemo(() => skillsOf(S), [S.resume]), myTrack = useMemo(() => { try { return S.resume ? (C.detectTrack(S.resume, D.SKILLS)[0] || {}).track : S.track || ''; } catch (e) { return ''; } }, [S.resume]), skO = useMemo(() => D.SKILLS.filter(x => sk.includes(x.n)), [sk]);
   const [q, setQ] = useState(''), [city, setCity] = useState(''), [f, setF] = useState(mode === 'fresher' ? 'fresh' : ''), [n, setN] = useState(6);
   useEffect(() => { if (!S.sj) set({ sj: 1 }); }, []);
   const list = useMemo(() => {
     if (!jobs) return []; const t = q.toLowerCase().trim();
     let a = jobs.filter(j => (!t || (j.t + ' ' + j.c).toLowerCase().includes(t)) && (!city || (j.l || '').includes(city)) && (f !== 'fresh' || (FRESH.test(j.t + ' ' + (j.d || '')) && !SENIOR.test(j.t))) && (f !== 'urgent' || URGENT.test(j.t + ' ' + (j.d || ''))) && (f !== 'week' || Date.now() - (j.p || j.s) < 7 * 864e5));
-    a = a.map(j => { const tx = (j.t + ' ' + (j.d || '')).toLowerCase(), hit = skO.filter(s => s.al.some(a => tx.includes(a))).map(s => s.n); return { ...j, hit, pct: sk.length && hit.length ? Math.min(96, 40 + hit.length * 14) : 0 }; });
+    a = a.map(j => { const asks = asksOf(j), hit = asks.filter(n => sk.includes(n)); return { ...j, hit, pct: sk.length && hit.length ? (() => { const p = Math.min(95, Math.round(25 + 70 * hit.length / Math.max(asks.length, 5))); return topTrack(asks) === myTrack || !myTrack ? p : Math.min(p, 50); })() : 0 }; });
     return a.sort((x, y) => y.pct - x.pct || (y.p || y.s) - (x.p || x.s));
-  }, [jobs, q, city, f, sk, skO]);
+  }, [jobs, q, city, f, sk, skO, myTrack]);
   const cities = useMemo(() => { const m = {}; (jobs || []).forEach(j => { const c = (j.l || '').split(',')[0].trim(); if (c) m[c] = (m[c] || 0) + 1; }); return Object.entries(m).sort((a, b) => b[1] - a[1]).slice(0, 12).map(x => x[0]); }, [jobs]);
   const save_ = j => set(o => { const a = Array.isArray(o.apps) ? o.apps : []; return a.some(x => x.id === 'j:' + j.id) ? {} : { apps: [{ id: 'j:' + j.id, co: j.c, role: j.t, link: j.a || j.u, st: 'wish', ap: 0, ts: Date.now(), iv: [] }, ...a] }; });
   const saved = id => (S.apps || []).some(x => x.id === 'j:' + id);
@@ -107,10 +110,20 @@ function Jobs() {
       <div className="row" style={{ justifyContent: 'space-between', alignItems: 'flex-start' }}><h3>{j.t}</h3>{j.pct > 0 && <span className="pct">{j.pct}% match</span>}</div>
       <p className="meta"><b>{j.c}</b> · 📍 {j.l || 'India'} · {ago(j.p || j.s)}{j.sa ? ' · ₹' + j.sa[0] + '–' + j.sa[1] + ' LPA' : ''}</p>
       {j.hit.length > 0 && <p className="sm">✅ <b>Why it fits:</b> your resume shows {j.hit.slice(0, 3).join(', ')}.</p>}
+      <Prep j={j} sk={sk} />
       <div className="row"><a className="btn sm primary" href={j.a || j.u} target="_blank" rel="noopener noreferrer" onClick={() => set({ pa: { id: j.id, co: j.c, role: j.t, link: j.a || j.u, t: Date.now() } })}>Apply on company page ↗</a><button className="btn sm" onClick={() => save_(j)}>{saved(j.id) ? '✓ Saved' : '☆ Save'}</button></div>
     </article>)}
     {list.length > n && <div className="row"><button className="btn" onClick={() => setN(n + 10)}>Show more</button></div>}
   </>;
+}
+function Prep({ j, sk }) {
+  const [open, setOpen] = useState(false);
+  const info = useMemo(() => { if (!open) return null; const asks = asksOf(j).map(n => D.SKILLS.find(s => s.n === n)).filter(Boolean), lack = asks.filter(s => !sk.includes(s.n)).slice(0, 5), have = asks.filter(s => sk.includes(s.n)).slice(0, 5), tk = asks[0] && asks[0].track; return { lack, have, tk, topic: n => D.TOPICS.find(t => t.skill === n) }; }, [open]);
+  return <div><button className="btn sm ghost" onClick={() => setOpen(!open)}>{open ? '▲ Hide' : '🎯 Prepare for this job'}</button>
+    {open && info && <div className="note" style={{ marginTop: 8 }}>
+      {info.have.length > 0 && <p className="sm">✅ <b>You already show:</b> {info.have.map(s => s.n).join(', ')}</p>}
+      {info.lack.length > 0 ? <><p className="sm">➕ <b>Skills this job mentions that your resume lacks:</b></p><div className="row">{info.lack.map(s => { const t = info.topic(s.n); return <a key={s.n} className="chip" href={t ? '#/topic/' + t.id : '#/learn' + (s.track ? '/' + s.track : '')}>{s.n} →</a>; })}</div></> : <p className="sm dim">{sk.length ? 'Nothing obvious missing from the job post.' : 'Add your resume to compare your skills with this job.'}</p>}
+      <div className="row" style={{ marginTop: 10 }}><a className="btn sm" href="#/interview">🎤 Practise {info.tk ? (D.TRACKS.find(t => t.id === info.tk) || {}).name + ' ' : ''}questions</a><a className="btn sm" href="#/resumepdf">📄 Tailor my resume</a><a className="btn sm" href="#/companies">🏢 More about companies</a></div></div>}</div>;
 }
 function DidApply() {
   const { S, set } = useS(); const [show, setShow] = useState(false);
@@ -143,6 +156,19 @@ function Quiz({ qs }) {
     {q.o.map((o, k) => <button key={k} className={'opt' + (pick !== null ? (k === q.a ? ' ok' : k === pick ? ' no' : '') : '')} disabled={pick !== null} onClick={() => { setPick(k); if (k === q.a) setScore(s => s + 1); }}>{o}</button>)}
     {pick !== null && <><p><b>{pick === q.a ? 'Correct.' : 'Not quite.'}</b> {q.why}</p><button className="btn primary" onClick={() => { setI(i + 1); setPick(null); }}>{i + 1 >= qs.length ? 'Finish' : 'Next'}</button></>}</div>;
 }
+function TopicRelated({ t }) {
+  const jobs = useJobs(); const sk0 = D.SKILLS.find(s => s.n === t.skill), al0 = [t.name.toLowerCase(), ...(sk0 ? sk0.al : [])], tq = D.OPEN.filter(q => q.topic === t.id), aq = D.OPEN.filter(q => q.track === t.track && q.cat === 'Technical' && al0.some(w => w.length > 3 && (q.q + ' ' + q.keys.join(' ')).toLowerCase().includes(w))), qs = (tq.length ? tq : aq.length ? aq : D.OPEN.filter(q => q.track === t.track && q.cat === 'Technical')).slice(0, 4), sib = D.TOPICS.filter(x => x.track === t.track && x.id !== t.id), idx = D.TOPICS.filter(x => x.track === t.track).findIndex(x => x.id === t.id), nxt = D.TOPICS.filter(x => x.track === t.track)[idx + 1];
+  const sk = D.SKILLS.find(s => s.n === t.skill), al = sk ? sk.al : [t.name.toLowerCase()], tj = (jobs || []).filter(j => { const x = (j.t + ' ' + (j.d || '')).toLowerCase(); return al.some(a => x.includes(a)); }).slice(0, 3);
+  const tr = D.TRACKS.find(x => x.id === t.track) || {};
+  return <>
+    <h2>Use what you learned</h2>
+    <div className="grid">
+      <div className="card"><h3>🎤 Practise interview questions</h3>{qs.length ? qs.map(q => <p key={q.id} style={{ margin: '8px 0 0' }}><a href={'#/interview/' + q.id}>{q.q}</a></p>) : <p className="dim sm">No questions for this topic yet.</p>}<p style={{ margin: '10px 0 0' }}><a className="btn sm" href={'#/interview'}>All interview practice</a></p></div>
+      <div className="card"><h3>💼 Jobs that need this</h3>{tj.length ? tj.map(j => <p key={j.id} style={{ margin: '8px 0 0' }}><a href={j.a || j.u} target="_blank" rel="noreferrer">{j.t}</a><br /><span className="dim sm">{j.c} · {j.l || 'India'}</span></p>) : <p className="dim sm">{jobs ? 'No open jobs mention this right now.' : 'Loading…'}</p>}<p style={{ margin: '10px 0 0' }}><a className="btn sm" href="#/career">All jobs</a></p></div>
+      <div className="card"><h3>📚 Next in {tr.name || 'this field'}</h3>{nxt && <p style={{ margin: '8px 0 0' }}>Next topic: <a href={'#/topic/' + nxt.id}>{nxt.ic} {nxt.name}</a></p>}{sib.slice(0, 4).map(x => <p key={x.id} style={{ margin: '6px 0 0' }}><a href={'#/topic/' + x.id}>{x.ic} {x.name}</a></p>)}<p style={{ margin: '10px 0 0' }}><a className="btn sm" href={'#/learn/' + t.track}>All {tr.name} topics</a></p></div>
+      <div className="card"><h3>🧰 Put it to work</h3><ul className="sm"><li><a href="#/resumepdf">Add "{t.skill || t.name}" to your resume</a> once you can explain it.</li>{(t.track === 'servicenow' || t.track === 'programming') && <li><a href="#/lab">Practise it in the coding lab</a></li>}<li><a href="#/reading">Read a book or guide on {tr.name || 'this field'}</a></li></ul></div>
+    </div></>;
+}
 function Topic({ id }) {
   const t = D.TOPICS.find(x => x.id === id); const [tab, setTab] = useState('learn'), [rev, setRev] = useState(false);
   if (!t) return <p>Topic not found. <a href="#/learn">Back to Learn</a></p>;
@@ -153,6 +179,7 @@ function Topic({ id }) {
     {tab === 'terms' && <div className="grid">{t.facts.map(f => <div className="card" key={f.id}><b>{f.t}</b><p className="dim sm">{f.d}</p></div>)}</div>}
     {tab === 'quiz' && <Quiz qs={t.qs} />}
     {tab === 'scen' && <div className="card"><span className="tag alt">Real-time scenario</span><p style={{ fontSize: '1.1rem' }}>{(t.scen || [])[0]}</p>{!rev ? <button className="btn primary" onClick={() => setRev(true)}>Show the correct approach</button> : <ol>{(t.scen || []).slice(1).map((s, i) => <li key={i}>{s}</li>)}</ol>}</div>}
+  <TopicRelated t={t} />
   </>;
 }
 
@@ -244,7 +271,7 @@ function Profile() {
 
 function Router() {
   const [r, a] = useHash(); let v;
-  switch (r) { case 'home': v = <Home />; break; case 'career': case 'openings': v = <Jobs />; break; case 'learn': v = <Learn arg={a} />; break; case 'topic': v = <Topic id={a} />; break; case 'interview': case 'practice': v = <Interview />; break; case 'resumepdf': case 'resume': v = <ResumePdf arg={a} />; break; case 'report': v = <Report />; break; case 'ctc': v = <Ctc />; break; case 'pay': v = <Pay />; break; case 'reading': v = <Reading />; break; case 'tracker': v = <Tracker />; break; case 'profile': v = <Profile />; break; default: { const X = EXTRA[r]; v = X ? <X arg={a} /> : <Home />; } }
+  switch (r) { case 'home': v = <Home />; break; case 'career': case 'openings': v = <Jobs />; break; case 'learn': v = <Learn arg={a} />; break; case 'topic': v = <Topic id={a} />; break; case 'interview': case 'practice': v = <Interview arg={a} />; break; case 'resumepdf': case 'resume': v = <ResumePdf arg={a} />; break; case 'report': v = <Report />; break; case 'ctc': v = <Ctc />; break; case 'pay': v = <Pay />; break; case 'reading': v = <Reading />; break; case 'tracker': v = <Tracker />; break; case 'profile': v = <Profile />; break; default: { const X = EXTRA[r]; v = X ? <X arg={a} /> : <Home />; } }
   return <Shell route={r === 'topic' ? 'learn' : r}>{v}<DidApply /></Shell>;
 }
 createRoot(document.getElementById('root')).render(<Provider><Router /></Provider>);
