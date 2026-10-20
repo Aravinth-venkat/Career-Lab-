@@ -5,6 +5,8 @@ import './styles.css';
 import EXTRA from './extra.js';
 import ResumeUpload from './ResumeUpload.jsx';
 import { parse, layout, TEMPLATES, pdfFromPages, PAGE, CSSF } from './resumeTpl.js';
+import { docxBytes } from './resumeDocx.js';
+import { Style, Content } from './resumeEdit.jsx';
 
 import { Provider, useS, useJobs, skillsOf, FRESH, SENIOR, URGENT, ago, stepsOf, lastIdx } from './ctx.jsx';
 const useHash = () => { const get = () => (location.hash.replace(/^#\/?/, '') || 'home').split('/'); const [h, setH] = useState(get); useEffect(() => { const f = () => { setH(get()); window.scrollTo(0, 0); }; window.addEventListener('hashchange', f); return () => window.removeEventListener('hashchange', f); }, []); return h; };
@@ -161,23 +163,29 @@ function Interview() {
 function Preview({ pages, w }) {
   return <div className="rpages">{pages.map((p, i) => <svg key={i} viewBox={`0 0 ${PAGE.w} ${PAGE.h}`} className="rpage" style={{ maxWidth: w }}><rect width={PAGE.w} height={PAGE.h} fill="#fff" />{p.map((o, k) => o.t === 'rect' ? <rect key={k} x={o.x} y={o.y} width={o.w} height={o.h} fill={rgb(o.col)} /> : o.t === 'line' ? <line key={k} x1={o.x1} x2={o.x2} y1={o.y} y2={o.y} stroke={rgb(o.col)} strokeWidth={o.w} /> : <text key={k} x={o.x} y={o.y} fontSize={o.size} fill={rgb(o.col)} fontFamily={CSSF[o.f]} fontWeight={o.f === 'F2' || o.f === 'F4' ? 700 : 400} xmlSpace="preserve">{o.s.replace(/\x01/g, '\u2022')}</text>)}</svg>)}</div>;
 }
+import { ACC } from './resumeTpl.js';
+const accentOf = k => ACC[k] || ACC.modern;
 const rgb = c => `rgb(${c.map(v => Math.round(v * 255)).join(',')})`;
 function ResumePdf() {
   const { S, set } = useS(); const [txt, setTxt] = useState(S.resume || ''), [tpl, setTpl] = useState(() => { try { return localStorage.getItem('pm_tpl') || 'modern'; } catch (e) { return 'modern'; } }), [edit, setEdit] = useState(!S.resume);
   const words = txt.trim().split(/\s+/).length, ok = words >= 20;
   const a = useMemo(() => { try { return words > 10 ? C.analyzeResume(txt, D.SKILLS) : null; } catch (e) { return null; } }, [txt]);
-  const doc = useMemo(() => ok ? parse(txt, C.extractSkills(txt, D.SKILLS)) : null, [txt]);
-  const pages = useMemo(() => doc ? layout(doc, tpl) : null, [doc, tpl]);
+  const [doc, setDoc] = useState(null), [opt, setOpt] = useState(() => { try { return JSON.parse(localStorage.getItem('pm_ropt')) || {}; } catch (e) { return {}; } });
+  useEffect(() => { setDoc(ok ? parse(txt, C.extractSkills(txt, D.SKILLS)) : null); }, [txt]);
+  useEffect(() => { try { localStorage.setItem('pm_ropt', JSON.stringify(opt)); } catch (e) { } }, [opt]);
+  const pages = useMemo(() => doc ? layout(doc, tpl, opt) : null, [doc, tpl, opt]);
   const pick = k => { setTpl(k); try { localStorage.setItem('pm_tpl', k); } catch (e) { } };
+  const dlw = () => { const u = docxBytes(doc, tpl, { ...opt, accent: opt.accent || accentOf(tpl) }), l = document.createElement('a'); l.href = URL.createObjectURL(new Blob([u], { type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' })); l.download = (doc.name || 'resume').replace(/\s+/g, '-') + '-resume.docx'; l.click(); };
   const dl = () => { const s = pdfFromPages(pages, doc.name + ' resume'), u = new Uint8Array(s.length); for (let k = 0; k < s.length; k++) u[k] = s.charCodeAt(k) & 255; const l = document.createElement('a'); l.href = URL.createObjectURL(new Blob([u], { type: 'application/pdf' })); l.download = (doc.name || 'resume').replace(/\s+/g, '-') + '-resume.pdf'; l.click(); };
   return <><h1>📄 Resume maker</h1><p className="dim">Add your resume once. Pick a template, check the preview, download a clean PDF. Nothing is uploaded.</p>
     <div className="card"><b>1. Add your resume</b> <span className="dim sm">PDF, Word or text. Read on your device only.</span><ResumeUpload onText={t => { setTxt(t); setEdit(false); }} />
       <div className="row" style={{ marginTop: 10 }}><button className="btn sm" onClick={() => setEdit(!edit)}>{edit ? 'Hide text' : '✏️ Edit text'}</button><button className="btn sm primary" disabled={!ok} onClick={() => set({ resume: txt, conf: 1 })}>{S.resume === txt && ok ? '✓ Saved' : 'Save my resume'}</button></div>
       {edit && <textarea style={{ marginTop: 10 }} placeholder="Or paste your resume text here" value={txt} onChange={e => setTxt(e.target.value)} />}</div>
     {doc && <><div className="card"><b>2. Choose a template</b><div className="tplgrid">{TEMPLATES.map(([k, n, d]) => <button key={k} className={'tpl' + (tpl === k ? ' on' : '')} onClick={() => pick(k)}><span className="tn">{n}</span><span className="dim sm">{d}</span></button>)}</div>
-      <div className="row" style={{ marginTop: 12 }}><button className="btn primary" onClick={dl}>⬇️ Download PDF ({pages.length} page{pages.length > 1 ? 's' : ''})</button></div>
+      <div className="row" style={{ marginTop: 12 }}><button className="btn primary" onClick={dl}>⬇️ Download PDF ({pages.length} page{pages.length > 1 ? 's' : ''})</button><button className="btn primary" onClick={dlw}>⬇️ Download Word (.docx)</button></div>
+      <p className="dim sm">The Word file is one column with the same colours and fonts. Sidebar, Timeline and Compact look like their Modern, Classic cousins in Word; use the PDF for the exact design.</p>
       <p className="dim sm">Found: {doc.sections.map(s => s.title).join(', ') || 'no sections'}. If a section is missing, put its heading on its own line (for example EXPERIENCE) and the preview updates.</p></div>
-      <Preview pages={pages} w={620} /></>}
+      <Style o={opt} setO={setOpt} /><Content doc={doc} setDoc={setDoc} /><Preview pages={pages} w={620} /></>}
     {a && <div className="card"><div className="row" style={{ gap: 20 }}><div className="score" style={{ '--p': a.score }}><span>{a.score}</span></div><div><h3>Resume score</h3><p className="dim sm">Out of 100. Fix the points below to raise it.</p></div></div>
       <h2>Fixes</h2><ul>{a.tips.slice(0, 8).map((t, k) => <li key={k}>{t}</li>)}</ul></div>}</>;
 }

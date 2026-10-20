@@ -48,23 +48,29 @@ const ST = {
   minimal: { f: 'F1', fb: 'F2', size: 10, lead: 1.45, accent: [0.35, 0.35, 0.38], head: 'plain', ink: [0.12, 0.12, 0.14], sub: [0.45, 0.45, 0.5] },
   compact: { f: 'F1', fb: 'F2', size: 9, lead: 1.25, accent: [0.15, 0.2, 0.45], head: 'rule', ink: [0.1, 0.1, 0.12], sub: [0.38, 0.4, 0.46] },
   sidebar: { f: 'F1', fb: 'F2', size: 9.8, lead: 1.35, accent: [0.13, 0.2, 0.42], head: 'bar', ink: [0.1, 0.12, 0.16], sub: [0.4, 0.43, 0.5] },
+  executive: { f: 'F3', fb: 'F4', size: 10.5, lead: 1.32, accent: [0.1, 0.2, 0.4], head: 'rulec', ink: [0.1, 0.1, 0.14], sub: [0.35, 0.35, 0.42] },
+  timeline: { f: 'F1', fb: 'F2', size: 9.8, lead: 1.35, accent: [0.8, 0.3, 0.2], head: 'bar', ink: [0.1, 0.1, 0.14], sub: [0.4, 0.4, 0.46], tl: true },
+  bold: { f: 'F1', fb: 'F2', size: 10, lead: 1.35, accent: [0.1, 0.12, 0.2], head: 'block', ink: [0.1, 0.1, 0.14], sub: [0.4, 0.4, 0.46] },
   banner: { f: 'F1', fb: 'F2', size: 10, lead: 1.35, accent: [0.38, 0.27, 0.78], head: 'plain', ink: [0.1, 0.1, 0.16], sub: [0.4, 0.4, 0.5] }
 };
-export const TEMPLATES = [['classic', 'Classic', 'Plain serif. Safest for hiring software and campus forms.'], ['modern', 'Modern', 'Teal headings with a clean sans-serif look.'], ['sidebar', 'Sidebar', 'Dark side panel for contact, skills and certificates.'], ['banner', 'Banner', 'Coloured header band, then a single column.'], ['compact', 'Compact', 'Smaller text to fit more on one page.'], ['minimal', 'Minimal', 'Light and airy, lots of white space.']];
+export const TEMPLATES = [['classic', 'Classic', 'Plain serif. Safest for hiring software and campus forms.'], ['modern', 'Modern', 'Teal headings with a clean sans-serif look.'], ['sidebar', 'Sidebar', 'Dark side panel for contact, skills and certificates.'], ['banner', 'Banner', 'Coloured header band, then a single column.'], ['compact', 'Compact', 'Smaller text to fit more on one page.'], ['minimal', 'Minimal', 'Light and airy, lots of white space.'], ['executive', 'Executive', 'Serif with navy rules. Good for senior roles.'], ['timeline', 'Timeline', 'Dates in a left column, easy to scan.'], ['bold', 'Bold', 'Strong filled section bars.']];
 const mu = (c, k) => c.map(v => Math.min(1, v + (1 - v) * k));
 
 function headingR(f, st, title, x0, x1) {
-  const sz = st.size + 1.5; f.ensure(sz + 22); f.y += st.head === 'plain' ? 12 : 10;
+  const sz = st.size + 1.5; f.ensure(sz + 24); f.y += st.head === 'plain' ? 12 : 10;
   const t = san(title).toUpperCase();
   if (st.head === 'rule') { f.text(t, x0, sz, st.fb, st.ink); f.y += sz + 3; f.line(x0, x1, f.y, st.ink, 0.8); f.y += 7; }
   else if (st.head === 'bar') { f.rect(x0, f.y + 1, 3, sz, st.accent); f.text(t, x0 + 9, sz, st.fb, st.accent); f.y += sz + 4; f.line(x0, x1, f.y, mu(st.accent, 0.75), 0.6); f.y += 7; }
+  else if (st.head === 'rulec') { f.text(t, x0, sz, st.fb, st.accent); f.y += sz + 3; f.line(x0, x1, f.y, st.accent, 1.2); f.line(x0, x1, f.y + 2.5, st.accent, 0.4); f.y += 9; }
+  else if (st.head === 'block') { f.rect(x0, f.y - 1, x1 - x0, sz + 7, st.accent); f.text(t, x0 + 7, sz, st.fb, [1, 1, 1], sz + 3); f.y += sz + 12; }
   else { f.text(t, x0, sz - 1, st.fb, st.accent); f.y += sz + 1; f.y += 4; }
 }
 function para(f, st, s, o = {}) { const x0 = o.x0 ?? f.x0, x1 = o.x1 ?? f.x1, size = o.size || st.size, fo = o.f || st.f, ind = o.ind || 0, lh = size * st.lead; wrapT(san(s), size, fo, x1 - x0 - ind).forEach(l => { f.ensure(lh); f.text(l, x0 + ind, size, fo, o.col || st.ink, lh * 0.78); f.y += lh; }); }
 function bullet(f, st, s, o = {}) { const x0 = o.x0 ?? f.x0, x1 = o.x1 ?? f.x1, size = o.size || st.size, lh = size * st.lead; wrapT(san(s), size, st.f, x1 - x0 - 12).forEach((l, i) => { f.ensure(lh); if (!i) f.text('\x01', x0 + 2, size, st.f, st.accent, lh * 0.78); f.text(l, x0 + 12, size, st.f, st.ink, lh * 0.78); f.y += lh; }); f.y += 1.2; }
 function sectionBody(f, st, s, o = {}) {
   const x0 = o.x0 ?? f.x0, x1 = o.x1 ?? f.x1, z = { x0, x1 };
-  if (s.kind === 'experience') s.entries.forEach(e => {
+  if (s.kind === 'experience' && st.tl) s.entries.forEach(e => { const lh = (st.size + 0.6) * st.lead, X0 = x0 + 104, zz = { x0: X0, x1 }; f.ensure(lh * 2.5); f.text(e.dates, x0, st.size - 0.5, st.f, st.accent, lh * 0.78); f.text(e.role, X0, st.size + 0.6, st.fb, st.ink, lh * 0.78); f.y += lh; if (e.company) { f.text(e.company, X0, st.size, st.f, st.sub, lh * 0.78); f.y += lh; } e.pts.forEach(p => bullet(f, st, p, zz)); f.y += 4; });
+  else if (s.kind === 'experience') s.entries.forEach(e => {
     const sz = st.size + 0.6, lh = sz * st.lead; f.ensure(lh * 2.5); const dw = tw(e.dates, st.size - 0.5, st.f);
     f.text(e.role, x0, sz, st.fb, st.ink, lh * 0.78); if (e.dates) f.text(e.dates, x1 - dw, st.size - 0.5, st.f, st.sub, lh * 0.78); f.y += lh;
     if (e.company) { f.text(e.company, x0, st.size, st.f, st.accent, lh * 0.78); f.y += lh; }
@@ -79,8 +85,8 @@ function sectionBody(f, st, s, o = {}) {
   else if (s.kind === 'skills') s.lines.forEach(l => para(f, st, l, z));
   else s.lines.forEach(l => bullet(f, st, l, z));
 }
-export function layout(doc, key) {
-  const st = ST[key] || ST.modern, pages = [], fb = st.fb;
+export function layout(doc0, key, o = {}) {
+  const st = { ...(ST[key] || ST.modern) }, pages = []; if (o.accent) st.accent = o.accent; if (o.font === 'serif') { st.f = 'F3'; st.fb = 'F4'; } else if (o.font === 'sans') { st.f = 'F1'; st.fb = 'F2'; } if (o.scale) st.size *= o.scale; const fb = st.fb; const doc = { ...doc0, sections: doc0.sections.filter(s => !s.hidden) };
   const sub = doc.title && doc.title !== doc.name ? doc.title : '';
   if (key === 'sidebar') {
     const SW = 190, deco = (p) => p.push({ t: 'rect', x: 0, y: 0, w: SW, h: PH, col: st.accent });
@@ -98,8 +104,8 @@ export function layout(doc, key) {
   }
   const f = new Flow(pages, key === 'compact' ? { x0: 32, x1: PW - 32, top: 28, bottom: PH - 28 } : key === 'minimal' ? { x0: 56, x1: PW - 56, top: 52, bottom: PH - 48 } : { x0: 44, x1: PW - 44, top: 40, bottom: PH - 40 });
   const cl = doc.contact.map(san).join('    |    ');
-  if (key === 'classic') { const nw = tw(doc.name.toUpperCase(), 22, fb); f.text(doc.name.toUpperCase(), (PW - nw) / 2, 22, fb, st.ink, 22); f.y += 28; if (sub) { const w = tw(sub, 11.5, st.f); f.text(sub, (PW - w) / 2, 11.5, st.f, st.sub, 11.5); f.y += 15; } const w = tw(cl, 9.5, st.f); f.text(cl, (PW - w) / 2, 9.5, st.f, st.sub, 9.5); f.y += 16; }
-  else if (key === 'banner') { const h = sub ? 104 : 88; f.y = 0; f.rect(0, 0, PW, h, st.accent); f.text(doc.name, f.x0, 26, fb, [1, 1, 1], 46); if (sub) f.text(sub, f.x0, 12, st.f, [0.92, 0.9, 1], 66); f.text(cl, f.x0, 9.5, st.f, [0.92, 0.9, 1], sub ? 88 : 68); f.y = h + 4; }
+  if (key === 'classic' || key === 'executive') { const nw = tw(doc.name.toUpperCase(), 22, fb); f.text(doc.name.toUpperCase(), (PW - nw) / 2, 22, fb, key === 'executive' ? st.accent : st.ink, 22); f.y += 28; if (sub) { const w = tw(sub, 11.5, st.f); f.text(sub, (PW - w) / 2, 11.5, st.f, st.sub, 11.5); f.y += 15; } const w = tw(cl, 9.5, st.f); f.text(cl, (PW - w) / 2, 9.5, st.f, st.sub, 9.5); f.y += 16; }
+  else if (key === 'banner' || key === 'bold') { const h = sub ? 104 : 88; f.y = 0; f.rect(0, 0, PW, h, st.accent); f.text(doc.name, f.x0, 26, fb, [1, 1, 1], 46); if (sub) f.text(sub, f.x0, 12, st.f, [0.92, 0.9, 1], 66); f.text(cl, f.x0, 9.5, st.f, [0.92, 0.9, 1], sub ? 88 : 68); f.y = h + 4; }
   else if (key === 'compact') { f.text(doc.name, f.x0, 20, fb, st.ink, 20); const w = tw(cl, 8.5, st.f); f.text(cl, f.x1 - w, 8.5, st.f, st.sub, 20); f.y += 24; if (sub) { f.text(sub, f.x0, 10.5, st.f, st.accent, 10.5); f.y += 13; } }
   else if (key === 'minimal') { f.text(doc.name, f.x0, 28, st.f, st.ink, 28); f.y += 34; if (sub) { f.text(sub, f.x0, 12, st.f, st.accent, 12); f.y += 17; } f.text(cl, f.x0, 9, st.f, st.sub, 9); f.y += 18; }
   else { f.text(doc.name, f.x0, 26, fb, st.ink, 26); f.y += 31; if (sub) { f.text(sub, f.x0, 12.5, fb, st.accent, 12.5); f.y += 17; } f.text(cl, f.x0, 9.5, st.f, st.sub, 9.5); f.y += 14; f.line(f.x0, f.x1, f.y + 2, st.accent, 1.6); f.y += 4; }
@@ -124,3 +130,5 @@ export function pdfFromPages(pages, title) {
   const x = out.length; out += `xref\n0 ${objs.length + 1}\n0000000000 65535 f \n` + off.map(o => String(o).padStart(10, '0') + ' 00000 n \n').join('') + `trailer\n<< /Size ${objs.length + 1} /Root 1 0 R /Info ${info} 0 R >>\nstartxref\n${x}\n%%EOF`; return out;
 }
 export const PAGE = { w: PW, h: PH };
+
+export const ACC = Object.fromEntries(Object.keys(ST).map(k => [k, ST[k].accent]));

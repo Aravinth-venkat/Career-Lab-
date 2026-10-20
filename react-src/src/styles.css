@@ -56,3 +56,4 @@ textarea{min-height:220px;resize:vertical}label{display:grid;gap:6px;font-weight
 .tpl.on{outline:2px solid var(--acc)}.tpl .tn{font-weight:800}
 .rpages{display:flex;flex-direction:column;gap:14px;align-items:center;margin:14px 0}
 .rpage{width:100%;height:auto;border-radius:6px;box-shadow:0 6px 24px rgba(0,0,0,.35)}
+.sw{width:28px;height:28px;border-radius:50%;border:2px solid rgba(255,255,255,.4);cursor:pointer;padding:0}
