@@ -19,6 +19,7 @@ export function parse(text, skills) {
   const name = (head[0] || 'Your Name').replace(/\b(Mobile|Phone|Email|E-mail|LinkedIn)\b.*$/i, '').replace(/[^\p{L}\s.'-]/gu, '').trim() || 'Your Name';
   const contact = [ph && ph[0].trim(), em && em[0], li && li[0]].filter(Boolean);
   const loc = head.slice(1).find(l => /^[A-Za-z .,]+,\s*[A-Za-z .]+$/.test(l) && l.length < 40); if (loc) contact.push(loc);
+  const hl = head.slice(1).find(l => !/[@\d]/.test(l) && l.length < 50 && !/,/.test(l) && !/^(mobile|phone|email|e-mail|linkedin)/i.test(l));
   const secs = []; let cur = null;
   for (; i < lines.length; i++) { const l = lines[i]; if (!l) continue; const k = kindOf(l); if (k) { cur = { kind: k, title: l.replace(/:$/, '').replace(/^summary of skills and experience$/i, 'Summary'), lines: [] }; secs.push(cur); } else if (cur) cur.lines.push(l.replace(/^[-*•●▪>]\s*/, '')); }
   const doc = { name, contact, title: '', sections: [] };
@@ -27,6 +28,7 @@ export function parse(text, skills) {
     else if (s.kind === 'projects') { const ps = []; let p = null, mode = ''; s.lines.forEach(l => { if (/^project\s*#?\s*\d+/i.test(l)) { p = { title: l.replace(/\s*:$/, ''), meta: [], desc: '', pts: [] }; ps.push(p); mode = ''; return; } if (!p) { p = { title: 'Projects', meta: [], desc: '', pts: [] }; ps.push(p); } let m; if ((m = l.match(/^(Client|Role|Duration|Environment|Technologies)\s*:\s*(.*)$/i))) { p.meta.push([m[1], m[2]]); mode = ''; } else if ((m = l.match(/^Description\s*:\s*(.*)$/i))) { p.desc = m[1]; mode = 'd'; } else if (/^Responsibilities\s*:?$/i.test(l)) mode = 'r'; else if (mode === 'd' && !p.pts.length) p.desc += (p.desc ? ' ' : '') + l; else p.pts.push(l); }); doc.sections.push({ kind: 'projects', title: 'Projects', projects: ps }); }
     else doc.sections.push({ kind: s.kind, title: s.kind === 'summary' ? 'Summary' : s.kind === 'skills' ? 'Skills' : s.kind === 'certs' ? 'Certifications' : s.kind === 'education' ? 'Education' : s.title.replace(/\b\w/g, c => c.toUpperCase()).toLowerCase().replace(/\b\w/g, c => c.toUpperCase()), lines: s.lines });
   });
+  if (!doc.title && hl) doc.title = hl;
   if (!doc.sections.some(s => s.kind === 'skills') && skills && skills.length) doc.sections.push({ kind: 'skills', title: 'Key skills', lines: [skills.slice(0, 18).join(', ')], derived: true });
   const order = ['summary', 'skills', 'experience', 'projects', 'certs', 'education', 'other']; doc.sections.sort((a, b) => order.indexOf(a.kind) - order.indexOf(b.kind));
   return doc;
