@@ -3,6 +3,8 @@
 // Keeps only India jobs, tracks when each job was first seen and when it stopped being listed.
 // Never marks a job closed when its board failed to load. General information only.
 import fs from 'node:fs';
+// Keeps one entry per id (the open one if any, else the newest). Some company boards list the same posting more than once.
+export function dedupe(list) { const m = new Map(); for (const j of list) { const o = m.get(j.id); if (!o || (o.x && !j.x) || ((!o.x === !j.x) && (j.p || 0) > (o.p || 0))) m.set(j.id, j); } return [...m.values()]; }
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { fromGreenhouse, fromLever, fromAshby, fromText, buildSalary } from './salary.mjs';
@@ -164,7 +166,7 @@ export async function main() {
   for (const k of Object.keys(boards)) if (!(k in results)) ok.add(k), results[k] = null; // skipped this run: keep its jobs as they are
   for (const k of Object.keys(results)) if (results[k] === null) delete results[k];
   const skipped = Object.keys(boards).filter(k => !(k in results));
-  const jobs = merge(prev, fetched, new Set([...ok].filter(k => !skipped.includes(k))), NOW);
+  const jobs = dedupe(merge(prev, fetched, new Set([...ok].filter(k => !skipped.includes(k))), NOW));
   const enr = await enrich(jobs, +process.env.ENRICH_PER_RUN || 120);
   const ver = process.env.NO_VERIFY ? { checked: 0, closed: [] } : await verify(jobs, { cap: +process.env.VERIFY_PER_RUN || 150, now: NOW, getPage });
   for (const j of jobs) if (j.xv && j.x) expired[j.id] = expired[j.id] || j.x;
