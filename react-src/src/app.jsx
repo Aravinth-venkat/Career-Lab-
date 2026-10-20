@@ -43,6 +43,10 @@ function Shell({ route, children }) {
   </div>;
 }
 
+function InlineUpload({ onDone }) {
+  const { set } = useS();
+  return <div><ResumeUpload onText={t => { set({ resume: t, conf: 1 }); onDone && onDone(); }} /><p className="dim sm" style={{ margin: '10px 0 0' }}>No resume yet? <a href="#/resumepdf/new">✍️ Let us create one for you</a></p></div>;
+}
 function MakerNote() { return <p className="mnote">📄 Want a cleaner resume? <a href="#/resumepdf">Use the Resume maker</a> to pick a template and download it as PDF or Word.</p>; }
 function ResumeCard({ slim }) {
   const { S } = useS(); const pages = useMemo(() => { try { return layout(parse(S.resume, C.extractSkills(S.resume, D.SKILLS)), (() => { try { return localStorage.getItem('pm_tpl') || 'modern'; } catch (e) { return 'modern'; } })(), (() => { try { return JSON.parse(localStorage.getItem('pm_ropt')) || {}; } catch (e) { return {}; } })()); } catch (e) { return null; } }, [S.resume]);
@@ -55,7 +59,7 @@ function ResumeCard({ slim }) {
 const QA = { fresher: [['🌱 Fresher jobs', '#/career'], ['🎤 Practise', '#/interview'], ['📚 Learn', '#/learn']], exp: [['💼 Matched jobs', '#/career'], ['📊 My report', '#/report'], ['💵 Check CTC', '#/ctc']], senior: [['💼 Matched roles', '#/career'], ['💵 Compare offers', '#/ctc'], ['📌 My applications', '#/tracker']] };
 const TITLE = { fresher: 'Start your career: openings for you', exp: 'Your next move: roles that fit your experience', senior: 'Your next level: roles, pay and offers' };
 function Home() {
-  const { S } = useS(); const jobs = useJobs(), mode = modeOf(S), has = !!S.resume, st = stepsOf(S), n = st.filter(x => x[0]).length, nx = lastIdx(st);
+  const { S } = useS(); const [just, setJust] = useState(false); const jobs = useJobs(), mode = modeOf(S), has = !!S.resume, st = stepsOf(S), n = st.filter(x => x[0]).length, nx = lastIdx(st);
   const cos = jobs ? new Set(jobs.map(j => j.c)).size : 0;
   return <>
     <section className="card hero">
@@ -63,16 +67,17 @@ function Home() {
         <span className="tag">{has ? 'Your career buddy' : 'Free · for freshers and IT job seekers'}</span>
         <h1 style={{ margin: '14px 0 10px' }}>{has ? TITLE[mode] || 'Welcome back' : 'Find jobs that fit your resume, and learn what you are missing.'}</h1>
         <p className="dim">{has ? 'Pick up where you left off.' : 'Upload your resume. See matched jobs from company career pages, your level and a study plan.'}</p>
-        <div className="row" style={{ marginTop: 14 }}>{has ? (QA[mode] || QA.exp).map((x, i) => <a key={i} className={'btn' + (i === 0 ? ' primary' : '')} href={x[1]}>{x[0]}</a>) : <><a className="btn primary big" href="#/resumepdf">📄 Upload my resume</a><a className="btn big" href="#/resumepdf/new">✍️ Create a resume for me</a></>}</div>
+        <div className="row" style={{ marginTop: 14 }}>{has ? (QA[mode] || QA.exp).map((x, i) => <a key={i} className={'btn' + (i === 0 ? ' primary' : '')} href={x[1]}>{x[0]}</a>) : <InlineUpload onDone={() => setJust(true)} />}</div>
         {!has && <ul className="dim sm" style={{ listStyle: 'none', padding: 0, margin: '14px 0 0' }}><li>✓ Jobs from company pages, checked every 3 hours</li><li>✓ No sign-up. Your resume stays on your phone</li></ul>}
       </div>
       <div className="heroart" style={{ textAlign: 'center', fontSize: '5rem' }}>🎯</div>
     </section>
+    {just && has && <div className="note okn"><b>✅ Resume saved on this device.</b> Next, <a href="#/report">see your career report</a>. Want it to look cleaner? <a href="#/resumepdf">Use the Resume maker</a> to pick a template and download it as PDF or Word.</div>}
     {jobs && <p className="dim sm" style={{ margin: '4px 4px 0' }}><b>{jobs.length.toLocaleString('en-IN')}</b> jobs open today from <b>{cos}</b> companies</p>}
     <section className="card"><div className="row" style={{ justifyContent: 'space-between' }}><b>Your path</b><span className="dim sm">{n} of 5 done</span></div><div className="bar" style={{ margin: '10px 0' }}><i style={{ width: n * 20 + '%' }} /></div>
       <ol className="path">{st.map((x, i) => <li key={i} className={x[0] ? 'done' : i === nx ? 'now' : ''}><a href={x[3]}><span className="pi">{x[0] ? '✓' : x[1]}</span>{x[2]}</a></li>)}</ol>
       {nx >= 0 ? <a className="btn primary" href={st[nx][3]}>Next: {st[nx][2]}</a> : <p>You finished the path. Keep practising and applying.</p>}</section>
-    {has ? <MakerNote /> : <p className="mnote">No resume yet? <a href="#/resumepdf">Upload it</a> or <a href="#/resumepdf/new">let us create one for you</a>.</p>}
+    {has ? (just ? null : <MakerNote />) : <p className="mnote">No resume yet? <a href="#/resumepdf">Upload it</a> or <a href="#/resumepdf/new">let us create one for you</a>.</p>}
     <div className="grid">
       <a className="card" href="#/learn"><h3>📚 Learn</h3><p className="dim sm">{D.TOPICS.length} topics with lessons, quizzes and real scenarios.</p></a>
       <a className="card" href="#/interview"><h3>🎤 Interview practice</h3><p className="dim sm">{D.OPEN.length} questions with feedback on your answer.</p></a>
@@ -218,7 +223,7 @@ function ResumePdf({ arg }) {
 }
 function Report() {
   const { S } = useS(); const a = useMemo(() => S.resume ? C.analyzeResume(S.resume, D.SKILLS) : null, [S.resume]); const sk = skillsOf(S), y = yearsOf(S), mode = modeOf(S);
-  if (!a) return <><h1>📊 Career report</h1><div className="card"><p>Add your resume to get your level, skills and a plan.</p><div className="row"><a className="btn primary" href="#/resumepdf">Upload my resume</a><a className="btn" href="#/resumepdf/new">✍️ Create one for me</a></div></div></>;
+  if (!a) return <><h1>📊 Career report</h1><div className="card"><p>Add your resume to get your level, skills and a plan.</p><InlineUpload /></div></>;
   const tr = (C.detectTrack(S.resume, D.SKILLS)[0] || {}).track, tn = (D.TRACKS.find(t => t.id === tr) || {}).name || 'Your field', miss = D.SKILLS.filter(s => s.track === tr && !sk.includes(s.n)).slice(0, 6);
   return <><h1>📊 Your career report</h1><p className="dim">{tn} · about {y} year{y === 1 ? '' : 's'} · {MODEL[mode] || 'Getting started'}</p>
     <MakerNote />
