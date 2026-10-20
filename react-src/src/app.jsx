@@ -42,6 +42,7 @@ function Shell({ route, children }) {
   </div>;
 }
 
+function MakerNote() { return <p className="mnote">📄 Want a cleaner resume? <a href="#/resumepdf">Use the Resume maker</a> to pick a template and download it as PDF or Word.</p>; }
 function ResumeCard({ slim }) {
   const { S } = useS(); const pages = useMemo(() => { try { return layout(parse(S.resume, C.extractSkills(S.resume, D.SKILLS)), (() => { try { return localStorage.getItem('pm_tpl') || 'modern'; } catch (e) { return 'modern'; } })(), (() => { try { return JSON.parse(localStorage.getItem('pm_ropt')) || {}; } catch (e) { return {}; } })()); } catch (e) { return null; } }, [S.resume]);
   if (!pages) return null;
@@ -66,11 +67,11 @@ function Home() {
       </div>
       <div className="heroart" style={{ textAlign: 'center', fontSize: '5rem' }}>🎯</div>
     </section>
-    {has && <ResumeCard />}
     {jobs && <p className="dim sm" style={{ margin: '4px 4px 0' }}><b>{jobs.length.toLocaleString('en-IN')}</b> jobs open today from <b>{cos}</b> companies</p>}
     <section className="card"><div className="row" style={{ justifyContent: 'space-between' }}><b>Your path</b><span className="dim sm">{n} of 5 done</span></div><div className="bar" style={{ margin: '10px 0' }}><i style={{ width: n * 20 + '%' }} /></div>
       <ol className="path">{st.map((x, i) => <li key={i} className={x[0] ? 'done' : i === nx ? 'now' : ''}><a href={x[3]}><span className="pi">{x[0] ? '✓' : x[1]}</span>{x[2]}</a></li>)}</ol>
       {nx >= 0 ? <a className="btn primary" href={st[nx][3]}>Next: {st[nx][2]}</a> : <p>You finished the path. Keep practising and applying.</p>}</section>
+    {has && <MakerNote />}
     <div className="grid">
       <a className="card" href="#/learn"><h3>📚 Learn</h3><p className="dim sm">{D.TOPICS.length} topics with lessons, quizzes and real scenarios.</p></a>
       <a className="card" href="#/interview"><h3>🎤 Interview practice</h3><p className="dim sm">{D.OPEN.length} questions with feedback on your answer.</p></a>
@@ -202,7 +203,7 @@ function Report() {
   if (!a) return <><h1>📊 Career report</h1><div className="card"><p>Add your resume to get your level, skills and a plan.</p><a className="btn primary" href="#/resumepdf">Add my resume</a></div></>;
   const tr = (C.detectTrack(S.resume, D.SKILLS)[0] || {}).track, tn = (D.TRACKS.find(t => t.id === tr) || {}).name || 'Your field', miss = D.SKILLS.filter(s => s.track === tr && !sk.includes(s.n)).slice(0, 6);
   return <><h1>📊 Your career report</h1><p className="dim">{tn} · about {y} year{y === 1 ? '' : 's'} · {MODEL[mode] || 'Getting started'}</p>
-    <ResumeCard slim />
+    <MakerNote />
     <div className="card row" style={{ gap: 20 }}><div className="score" style={{ '--p': a.score }}><span>{a.score}</span></div><div><h3>Resume score</h3><p className="dim sm">{sk.length} skills found.</p><a className="btn sm" href="#/resumepdf">Improve my resume</a></div></div>
     <h2>Skills you have</h2><div className="row">{sk.slice(0, 20).map(s => <span key={s} className="chip on">{s}</span>)}{!sk.length && <span className="dim">None found yet.</span>}</div>
     <h2>Skills to add next</h2><div className="row">{miss.map(s => <a key={s.n} className="chip" href="#/learn">➕ {s.n}</a>)}</div>

@@ -63,3 +63,4 @@ textarea{min-height:220px;resize:vertical}label{display:grid;gap:6px;font-weight
 .rcard .rpages{margin:0}.rcard .rpage{box-shadow:0 4px 14px rgba(0,0,0,.4)}
 .okn{border-left:4px solid #22c55e}
 @media(max-width:560px){.rcard{grid-template-columns:96px 1fr;gap:12px}}
+.mnote{margin:2px 4px 6px;font-size:.9rem;color:var(--dim)}.mnote a{font-weight:700}
