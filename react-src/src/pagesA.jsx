@@ -81,7 +81,7 @@ function Companies({ arg }) {
       {lab('Type', <SS value={q.kind} any="All types" opts={kinds.map(k => [k, CD.kinds[k][0]])} onChange={v => upd({ kind: v, n: 15 })} />)}
       {lab('Show as', <Sel id="cg" value={q.g} opts={[['', 'One list'], ['kind', 'Grouped by company type']]} onChange={v => upd({ g: v, n: 15 })} />)}
       {lab('Search', <input id="cs" value={q.s} placeholder="Company name" onChange={e => upd({ s: e.target.value, n: 15 })} />)}
-    </div>{S.resume ? <p className="dim sm">Your resume is used on this device to pick better matches. It is never uploaded.</p> : <p className="dim sm">Add your resume in <a href="#/resumepdf">Resume maker</a> for better matches.</p>}</div>
+    </div>{S.resume ? <p className="dim sm">Your resume is used on this device to pick better matches. It is never uploaded.</p> : <p className="dim sm">Add your resume in <a href="#/resumepdf">Resume Studio</a> for better matches.</p>}</div>
     <p className="dim">{list.length} match{list.length === 1 ? '' : 'es'}{tr ? ' for ' + tname(tr) : ''}. Top five are marked ⭐.</p>
     {hiring && <div className="card"><h3>🟢 Hiring now (live from company job pages)</h3><p className="dim sm">{hiring.list.length} companies have openings right now{hiring.list.filter(x => x.isNew).length ? ', ' + hiring.list.filter(x => x.isNew).length + ' new to our list in the last 2 weeks' : ''}. Updated automatically.</p>
       <div className="row">{hiring.list.slice(0, 12).map(x => <button key={x.c} className="chip" onClick={() => { set({ opSeed: x.c }); go('#/career'); }}>{x.isNew ? '🆕 ' : ''}{x.c} · {x.n}{x.new7 ? ' (' + x.new7 + ' new)' : ''}</button>)}</div><p className="dim sm">Tap a company to see its openings.</p></div>}

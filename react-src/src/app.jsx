@@ -12,7 +12,7 @@ import Builder from './resumeBuild.jsx';
 import { Provider, useS, useJobs, skillsOf, FRESH, SENIOR, URGENT, ago, stepsOf, lastIdx } from './ctx.jsx';
 const useHash = () => { const get = () => (location.hash.replace(/^#\/?/, '') || 'home').split('/'); const [h, setH] = useState(get); useEffect(() => { const f = () => { setH(get()); window.scrollTo(0, 0); }; window.addEventListener('hashchange', f); return () => window.removeEventListener('hashchange', f); }, []); return h; };
 
-const ALL = { home: ['Home', '🏠'], career: ['Jobs', '💼'], learn: ['Learn', '📚'], practice: ['Practice', '🎮'], interview: ['Interview', '🎤'], report: ['My career report', '📊'], tracker: ['My applications', '📌'], ctc: ['CTC to in-hand', '💵'], resumepdf: ['Resume maker', '📄'], pay: ['Pay compass', '💰'], reading: ['Reading', '📚'], profile: ['Profile', '👤'], companies: ['Companies', '🏢'], journey: ['Career journey', '🧭'], lab: ['Coding lab', '💻'], ladder: ['Career ladder', '🪜'], mentor: ['Career mentor', '🧑‍🏫'], mock: ['Mock interview', '🎙️'], mymap: ['My journey map', '🗺️'], play: ['Practice games', '🎮'], progress: ['Save progress', '💾'], toolkit: ['Career toolkit', '🧰'], speak: ['Speaking practice', '🗣️'], offer: ['Offer helper', '🤝'] };
+const ALL = { home: ['Home', '🏠'], career: ['Jobs', '💼'], learn: ['Learn', '📚'], practice: ['Practice', '🎮'], interview: ['Interview', '🎤'], report: ['My career report', '📊'], tracker: ['My applications', '📌'], ctc: ['CTC to in-hand', '💵'], resumepdf: ['Resume Studio', '📄'], pay: ['Pay compass', '💰'], reading: ['Reading', '📚'], profile: ['Profile', '👤'], companies: ['Companies', '🏢'], journey: ['Career journey', '🧭'], lab: ['Coding lab', '💻'], ladder: ['Career ladder', '🪜'], mentor: ['Career mentor', '🧑‍🏫'], mock: ['Mock interview', '🎙️'], mymap: ['My journey map', '🗺️'], play: ['Practice games', '🎮'], progress: ['Save progress', '💾'], toolkit: ['Career toolkit', '🧰'], speak: ['Speaking practice', '🗣️'], offer: ['Offer helper', '🤝'] };
 const PRIME = { new: ['home', 'career', 'learn', 'interview', 'report'], fresher: ['home', 'career', 'learn', 'interview', 'resumepdf'], exp: ['home', 'career', 'report', 'interview', 'ctc', 'tracker'], senior: ['home', 'career', 'ctc', 'tracker', 'interview'] };
 const TABK = { new: ['home', 'career', 'learn', 'interview', 'report'], fresher: ['home', 'career', 'learn', 'interview', 'resumepdf'], exp: ['home', 'career', 'report', 'interview', 'ctc'], senior: ['home', 'career', 'ctc', 'tracker', 'interview'] };
 const GROUPS = [['Find work', ['career', 'companies', 'tracker', 'journey']], ['Prepare', ['learn', 'interview', 'mock', 'speak', 'play', 'lab', 'resumepdf', 'report']], ['Money and offers', ['ctc', 'pay', 'offer']], ['Grow', ['ladder', 'mentor', 'mymap', 'toolkit', 'reading']], ['You', ['progress', 'profile']]];
@@ -47,12 +47,12 @@ function InlineUpload({ onDone }) {
   const { set } = useS();
   return <div><ResumeUpload onText={t => { set({ resume: t, conf: 1 }); onDone && onDone(); }} /><p className="dim sm" style={{ margin: '10px 0 0' }}>No resume yet? <a href="#/resumepdf/new">✍️ Let us create one for you</a></p></div>;
 }
-function MakerNote() { return <p className="mnote">📄 Want a cleaner resume? <a href="#/resumepdf">Use the Resume maker</a> to pick a template and download it as PDF or Word.</p>; }
+function MakerNote() { return <p className="mnote">📄 Want a cleaner resume? <a href="#/resumepdf">Use the Resume Studio</a> to pick a template and download it as PDF or Word.</p>; }
 function ResumeCard({ slim }) {
   const { S } = useS(); const pages = useMemo(() => { try { return layout(parse(S.resume, C.extractSkills(S.resume, D.SKILLS)), (() => { try { return localStorage.getItem('pm_tpl') || 'modern'; } catch (e) { return 'modern'; } })(), (() => { try { return JSON.parse(localStorage.getItem('pm_ropt')) || {}; } catch (e) { return {}; } })()); } catch (e) { return null; } }, [S.resume]);
   if (!pages) return null;
-  return <section className="card rcard"><a href="#/resumepdf" className="rthumb" aria-label="Open resume maker"><Preview pages={[pages[0]]} w={150} /></a>
-    <div><span className="tag alt">Resume maker</span><h3 style={{ margin: '8px 0 6px' }}>Your resume is ready to polish</h3><p className="dim sm">9 templates, your colours, and a download as PDF or Word. Most hiring software reads a clean one-column resume best.</p>
+  return <section className="card rcard"><a href="#/resumepdf" className="rthumb" aria-label="Open Resume Studio"><Preview pages={[pages[0]]} w={150} /></a>
+    <div><span className="tag alt">Resume Studio</span><h3 style={{ margin: '8px 0 6px' }}>Your resume is ready to polish</h3><p className="dim sm">9 templates, your colours, and a download as PDF or Word. Most hiring software reads a clean one-column resume best.</p>
       <div className="row"><a className="btn primary" href="#/resumepdf">Choose a template</a>{!slim && <a className="btn" href="#/resumepdf">⬇️ Download</a>}</div></div></section>;
 }
 /* ---------- Home ---------- */
@@ -72,17 +72,19 @@ function Home() {
       </div>
       <div className="heroart" style={{ textAlign: 'center', fontSize: '5rem' }}>🎯</div>
     </section>
-    {just && has && <div className="note okn"><b>✅ Resume saved on this device.</b> Next, <a href="#/report">see your career report</a>. Want it to look cleaner? <a href="#/resumepdf">Use the Resume maker</a> to pick a template and download it as PDF or Word.</div>}
+    {just && has && <div className="note okn"><b>✅ Resume saved on this device.</b> Next, <a href="#/report">see your career report</a>. Want it to look cleaner? <a href="#/resumepdf">Use the Resume Studio</a> to pick a template and download it as PDF or Word.</div>}
     {jobs && <p className="dim sm" style={{ margin: '4px 4px 0' }}><b>{jobs.length.toLocaleString('en-IN')}</b> jobs open today from <b>{cos}</b> companies</p>}
     <section className="card"><div className="row" style={{ justifyContent: 'space-between' }}><b>Your path</b><span className="dim sm">{n} of 5 done</span></div><div className="bar" style={{ margin: '10px 0' }}><i style={{ width: n * 20 + '%' }} /></div>
       <ol className="path">{st.map((x, i) => <li key={i} className={x[0] ? 'done' : i === nx ? 'now' : ''}><a href={x[3]}><span className="pi">{x[0] ? '✓' : x[1]}</span>{x[2]}</a></li>)}</ol>
       {nx >= 0 ? <a className="btn primary" href={st[nx][3]}>Next: {st[nx][2]}</a> : <p>You finished the path. Keep practising and applying.</p>}</section>
     {has ? (just ? null : <MakerNote />) : <p className="mnote">No resume yet? <a href="#/resumepdf">Upload it</a> or <a href="#/resumepdf/new">let us create one for you</a>.</p>}
+    {has ? <HomeDash /> : <>
     <div className="grid">
       <a className="card" href="#/learn"><h3>📚 Learn</h3><p className="dim sm">{D.TOPICS.length} topics with lessons, quizzes and real scenarios.</p></a>
       <a className="card" href="#/interview"><h3>🎤 Interview practice</h3><p className="dim sm">{D.OPEN.length} questions with feedback on your answer.</p></a>
       <a className="card" href="#/ctc"><h3>💵 CTC to in-hand</h3><p className="dim sm">Monthly salary, notice period and offer comparison.</p></a>
     </div>
+    </>}
   </>;
 }
 
@@ -189,6 +191,7 @@ function Topic({ id }) {
 }
 
 import Interview from './interviewPage.jsx';
+import HomeDash from './homeDash.jsx';
 /* ---------- Resume and report ---------- */
 function Preview({ pages, w }) {
   return <div className="rpages">{pages.map((p, i) => <svg key={i} viewBox={`0 0 ${PAGE.w} ${PAGE.h}`} className="rpage" style={{ maxWidth: w }}><rect width={PAGE.w} height={PAGE.h} fill="#fff" />{p.map((o, k) => o.t === 'rect' ? <rect key={k} x={o.x} y={o.y} width={o.w} height={o.h} fill={rgb(o.col)} /> : o.t === 'line' ? <line key={k} x1={o.x1} x2={o.x2} y1={o.y} y2={o.y} stroke={rgb(o.col)} strokeWidth={o.w} /> : <text key={k} x={o.x} y={o.y} fontSize={o.size} fill={rgb(o.col)} fontFamily={CSSF[o.f]} fontWeight={o.f === 'F2' || o.f === 'F4' ? 700 : 400} xmlSpace="preserve">{o.s.replace(/\x01/g, '\u2022')}</text>)}</svg>)}</div>;
@@ -207,7 +210,7 @@ function ResumePdf({ arg }) {
   const pick = k => { setTpl(k); try { localStorage.setItem('pm_tpl', k); } catch (e) { } };
   const dlw = () => { const u = docxBytes(doc, tpl, { ...opt, accent: opt.accent || accentOf(tpl) }), l = document.createElement('a'); l.href = URL.createObjectURL(new Blob([u], { type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' })); l.download = (doc.name || 'resume').replace(/\s+/g, '-') + '-resume.docx'; l.click(); };
   const dl = () => { const s = pdfFromPages(pages, doc.name + ' resume'), u = new Uint8Array(s.length); for (let k = 0; k < s.length; k++) u[k] = s.charCodeAt(k) & 255; const l = document.createElement('a'); l.href = URL.createObjectURL(new Blob([u], { type: 'application/pdf' })); l.download = (doc.name || 'resume').replace(/\s+/g, '-') + '-resume.pdf'; l.click(); };
-  return <><h1>📄 Resume maker</h1><p className="dim">Add your resume once. Pick a template, check the preview, download a clean PDF. Nothing is uploaded.</p>
+  return <><h1>📄 Resume Studio</h1><p className="dim">Add your resume once. Pick a template, check the preview, download a clean PDF. Nothing is uploaded.</p>
     {!S.resume && !doc && <div className="row" style={{ margin: '4px 0 12px' }}><button className={'chip' + (!mk ? ' on' : '')} onClick={() => setMk(false)}>📤 I have a resume</button><button className={'chip' + (mk ? ' on' : '')} onClick={() => setMk(true)}>✍️ Create one for me</button></div>}
     {mk && !doc && <Builder onDone={t => { setTxt(t); set({ resume: t, conf: 1 }); setMk(false); setJust(true); setTimeout(() => { const el = document.getElementById('tplstep'); el && el.scrollIntoView({ behavior: 'smooth' }); }, 400); }} />}
     {!(mk && !doc) && <div className="card"><b>1. Add your resume</b> <span className="dim sm">PDF, Word or text. Read on your device only.</span><ResumeUpload onText={t => { setTxt(t); setEdit(false); set({ resume: t, conf: 1 }); setJust(true); setTimeout(() => { const el = document.getElementById('tplstep'); el && el.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 400); }} />
@@ -249,10 +252,22 @@ function Ctc() {
     <h2>Notice period</h2><div className="card"><div className="row"><label>Notice days<input type="number" value={nd} onChange={e => setNd(+e.target.value)} /></label><label>Days you will serve<input type="number" value={ns} onChange={e => setNs(+e.target.value)} /></label></div>
       <p>Days to buy out: <b>{left}</b> · on basic: <b>{R(A.basicM / 30 * left)}</b> · on gross: <b>{R(A.grossM / 30 * left)}</b></p></div></>;
 }
+const PAYN = { servicenow: 'ServiceNow', programming: 'Programming and software', qa: 'QA and testing', cyber: 'Cyber security', cloud: 'Cloud and DevOps', data: 'Data and analytics', design: 'Design', dmkt: 'Digital marketing', sales: 'Sales', support: 'Customer support', hr: 'HR', finance: 'Finance', ops: 'Operations', pm: 'Project management', eng: 'Engineering' };
 function Pay() {
-  const d = window.__SAL__ || { fields: {} }, f = d.fields || {}, ks = Object.keys(f).sort((x, y) => f[y].n - f[x].n), max = Math.max(1, ...ks.map(k => f[k].hi));
-  return <><h1>💰 Pay compass</h1><p className="dim">Pay ranges that companies wrote in their own job posts (lakh ₹ a year). Only fields with enough posts are shown.</p>
-    {!ks.length ? <div className="card">Not enough published pay yet.</div> : <div className="card">{ks.map(k => <div key={k} style={{ margin: '14px 0' }}><div className="row" style={{ justifyContent: 'space-between' }}><b>{k}</b><span className="sm dim">₹{f[k].lo}–{f[k].hi} L · {f[k].n} posts</span></div><div className="bar"><i style={{ width: f[k].hi / max * 100 + '%' }} /></div></div>)}</div>}</>;
+  const { S } = useS(); const jobs = useJobs(); const d = window.__SAL__ || { fields: {} }, f = d.fields || {}, cm = d.combos || {}, ks = Object.keys(f).sort((x, y) => f[y].n - f[x].n), max = Math.max(1, ...ks.map(k => f[k].hi));
+  const paid = (jobs || []).filter(j => j.sa && j.sa.length).slice(0, 8), total = d.withPay || paid.length, mine = S.track || '';
+  const FAQ = [['What is CTC?', 'CTC is the total yearly cost the company spends on you: fixed pay, variable pay, PF and other benefits. It is not what reaches your bank. Use the CTC to in-hand calculator for the monthly figure.'], ['Why is a range wide?', 'Pay depends on your years of experience, skills, city, company type (product, services, startup) and how well you interview. A range shows what the company is willing to pay across levels for one role.'], ['Why so few numbers here?', 'Most Indian companies do not write pay in their job posts. We only count pay that a company itself published, never guesses, so this page has few entries. It grows as more companies share pay.'], ['Can I trust one big number?', 'Be careful. One remote role at 94 LPA is an outlier (for example a senior role paid in dollars). Treat a single post as an example, not as the market rate.']];
+  const STEPS = ['Know your CTC target: take your current CTC and aim for 20 to 40 percent more when you change company, if your skills have grown.', 'Check 3 sources before a talk: this page, the salary pages of sites like AmbitionBox or Glassdoor, and friends in the same role and city.', 'Ask the recruiter for the budget range early. It is normal and saves time for both sides.', 'Compare offers on monthly in-hand pay, not CTC. Variable pay and joining bonus may not be guaranteed.', 'Negotiate with reasons: your skills, certificates, results and other offers. Be polite and specific.', 'Get the final CTC breakup in writing before you resign.'];
+  return <><h1>💰 Pay compass</h1><p className="dim">Pay ranges that companies wrote in their own job posts in India (lakh rupees a year, LPA). Use it to get a feel for pay, then check your own offer.</p>
+    <div className="note"><b>How to read this page.</b> Only {total} job post{total === 1 ? '' : 's'} right now state a pay range, so a field below may be built from just a few posts. These are real examples, not market averages.{paid.length > 1 && new Set(paid.map(j => j.c)).size === 1 && <> All of them come from one company ({paid[0].c}), so do not treat them as the wider market.</>}</div>
+    <h2>Pay by field</h2>
+    {!ks.length ? <div className="card">Not enough published pay yet.</div> : <div className="card">{ks.map(k => <div key={k} style={{ margin: '14px 0' }} className={k === mine ? 'mine' : ''}><div className="row" style={{ justifyContent: 'space-between' }}><b>{PAYN[k] || k}{k === mine && <span className="tag" style={{ marginLeft: 8 }}>your field</span>}</b><span className="sm dim">₹{f[k].lo === f[k].hi ? f[k].hi : f[k].lo + '–' + f[k].hi} LPA · {f[k].n} post{f[k].n === 1 ? '' : 's'}</span></div><div className="bar"><i style={{ width: f[k].hi / max * 100 + '%' }} /></div>{f[k].n < 5 && <p className="dim sm" style={{ margin: '4px 0 0' }}>Only {f[k].n} post{f[k].n === 1 ? '' : 's'}: an example, not an average.</p>}</div>)}
+      {Object.keys(cm).length > 0 && <p className="dim sm">By city: {Object.keys(cm).map(k => { const [fl, ct] = k.split('|'); return (PAYN[fl] || fl) + ' in ' + ct + ' (₹' + cm[k].lo + '–' + cm[k].hi + ' LPA)'; }).join('; ')}.</p>}</div>}
+    {paid.length > 0 && <><h2>Posts that state pay</h2><div className="grid">{paid.map(j => <a key={j.id} className="card" href={j.a || j.u} target="_blank" rel="noreferrer"><b>{j.t}</b><p className="dim sm" style={{ margin: '4px 0' }}>{j.c} · {j.l || 'India'}</p><span className="tag">₹{j.sa[0]}{j.sa[1] && j.sa[1] !== j.sa[0] ? '–' + j.sa[1] : ''} LPA</span></a>)}</div></>}
+    <h2>What affects pay</h2>
+    <div className="grid"><div className="card"><h3>🧑‍💻 Experience and skills</h3><p className="dim sm">Each level (fresher, 1 to 3 years, 3 to 6, senior) pays more. Rare skills and certificates raise the offer. See your level on the <a href="#/ladder">Career ladder</a>.</p></div><div className="card"><h3>🏢 Company type</h3><p className="dim sm">Product companies and global capability centres usually pay more than services firms. Startups may pay less cash but give faster growth. Browse <a href="#/companies">Companies</a>.</p></div><div className="card"><h3>📍 City</h3><p className="dim sm">Bengaluru, Hyderabad, Pune and Mumbai often pay more than smaller cities, but living cost is higher too. Remote roles can follow the company's home market.</p></div><div className="card"><h3>🧾 Pay structure</h3><p className="dim sm">Fixed, variable, PF, gratuity and bonus together make the CTC. Check in-hand pay with the <a href="#/ctc">CTC calculator</a>.</p></div></div>
+    <h2>How to use this before an offer</h2><div className="card"><ol>{STEPS.map((s, k) => <li key={k} style={{ margin: '6px 0' }}>{s}</li>)}</ol><div className="row"><a className="btn primary" href="#/ctc">💵 Check my offer</a><a className="btn" href="#/toolkit">🧰 Salary email drafts</a><a className="btn" href="#/offer">🤝 Offer helper</a></div></div>
+    <h2>Common questions</h2>{FAQ.map(([q, x]) => <details className="card" key={q}><summary><b>{q}</b></summary><p className="dim" style={{ marginTop: 8 }}>{x}</p></details>)}</>;
 }
 function Reading() {
   const { S } = useS(); const [t, setT] = useState(S.track || 'servicenow'), B = (window.__BOOKS__ || { tracks: {} }).tracks;
