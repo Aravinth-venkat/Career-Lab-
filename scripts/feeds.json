@@ -1,9 +1,55 @@
-{"queries":[
- {"q":"fresher hiring India","tag":"Freshers"},
- {"q":"campus hiring India IT companies","tag":"Freshers"},
- {"q":"walk-in drive India jobs","tag":"Walk-in"},
- {"q":"IT hiring outlook India skills in demand","tag":"Market"},
- {"q":"layoffs hiring slowdown India tech jobs","tag":"Market"}
-],
-"blockWords":["casino","betting","lottery","loan app","crypto giveaway","adult"],
-"maxAgeDays":10,"maxPending":40,"maxNotes":30}
+{
+ "queries": [
+  {
+   "q": "fresher hiring India",
+   "tag": "Freshers"
+  },
+  {
+   "q": "campus hiring India IT companies",
+   "tag": "Freshers"
+  },
+  {
+   "q": "walk-in drive India jobs",
+   "tag": "Walk-in"
+  },
+  {
+   "q": "IT hiring outlook India skills in demand",
+   "tag": "Market"
+  },
+  {
+   "q": "layoffs hiring slowdown India tech jobs",
+   "tag": "Market"
+  },
+  {
+   "tag": "Learning",
+   "q": "ServiceNow new release features"
+  },
+  {
+   "tag": "Learning",
+   "q": "Moveworks AI assistant enterprise"
+  },
+  {
+   "tag": "Learning",
+   "q": "how to learn programming India roadmap"
+  },
+  {
+   "tag": "Learning",
+   "q": "cloud certification India AWS Azure career"
+  },
+  {
+   "tag": "Learning",
+   "q": "cyber security skills fresher India"
+  }
+ ],
+ "blockWords": [
+  "casino",
+  "betting",
+  "lottery",
+  "loan app",
+  "crypto giveaway",
+  "adult"
+ ],
+ "maxAgeDays": 10,
+ "maxPending": 40,
+ "maxNotes": 30
+}
