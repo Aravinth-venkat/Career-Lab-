@@ -16,7 +16,7 @@ const MODEL = { new: '', fresher: 'Fresher view', exp: 'Experienced view', senio
 const NavLink = ({ k, cur }) => <a className={'nav' + (cur === k ? ' on' : '')} href={'#/' + k}><span>{ALL[k][1]}</span><span>{ALL[k][0]}</span></a>;
 
 function Shell({ route, children }) {
-  const { S, set } = useS(); const mode = modeOf(S), prime = PRIME[mode];
+  const { S, set } = useS(); const mode = modeOf(S), prime = PRIME[mode]; const [sheet, setSheet] = useState(false); useEffect(() => setSheet(false), [route]);
   return <div className="app">
     <aside className="side">
       <a className="brand" href="#/home"><span className="logo">P</span>Padimachi</a>
@@ -32,7 +32,10 @@ function Shell({ route, children }) {
       <div className="top"><a className="brand" href="#/home" style={{ padding: 0 }}><span className="logo">P</span>Padimachi</a><button className="btn sm ghost" onClick={() => set({ theme: S.theme === 'light' ? 'dark' : 'light' })}>{S.theme === 'light' ? '🌙' : '☀️'}</button></div>
       <main>{children}</main>
     </div>
-    <nav className="tabbar">{TABK[mode].map(k => <a key={k} href={'#/' + k} className={route === k ? 'on' : ''}><span className="ic">{ALL[k][1]}</span>{k === 'career' ? 'Jobs' : k === 'report' ? 'Report' : k === 'resumepdf' ? 'Resume' : k === 'ctc' ? 'CTC' : k === 'tracker' ? 'Applied' : ALL[k][0]}</a>)}</nav>
+    <nav className="tabbar">{TABK[mode].slice(0, 4).map(k => <a key={k} href={'#/' + k} className={route === k ? 'on' : ''}><span className="ic">{ALL[k][1]}</span>{k === 'career' ? 'Jobs' : k === 'report' ? 'Report' : k === 'resumepdf' ? 'Resume' : k === 'ctc' ? 'CTC' : k === 'tracker' ? 'Applied' : ALL[k][0]}</a>)}<a href="#/more" onClick={e => { e.preventDefault(); setSheet(x => !x); }} className={sheet || !TABK[mode].slice(0, 4).includes(route) && route !== 'home' ? 'on' : ''}><span className="ic">☰</span>More</a></nav>
+    {sheet && <div className="sheetbg" onClick={() => setSheet(false)}><div className="sheet" onClick={e => e.stopPropagation()}><div className="row" style={{ justifyContent: 'space-between' }}><b>All pages</b><button className="btn sm ghost" onClick={() => setSheet(false)}>✕ Close</button></div>
+      {GROUPS.map(([g, ks]) => <div key={g}><div className="nsub">{g}</div><div className="sheetgrid">{ks.map(k => <a key={k} href={'#/' + k} className={route === k ? 'on' : ''}><span>{ALL[k][1]}</span>{ALL[k][0]}</a>)}</div></div>)}
+      <div className="nsub">Display</div><button className="btn sm" onClick={() => set({ theme: S.theme === 'light' ? 'dark' : 'light' })}>{S.theme === 'light' ? '🌙 Dark mode' : '☀️ Light mode'}</button></div></div>}
   </div>;
 }
 
