@@ -8,6 +8,7 @@ import { parse, layout, TEMPLATES, pdfFromPages, PAGE, CSSF } from './resumeTpl.
 import { docxBytes } from './resumeDocx.js';
 import { Style, Content } from './resumeEdit.jsx';
 import Builder from './resumeBuild.jsx';
+import Ats from './resumeAts.jsx';
 
 import { Provider, useS, useJobs, skillsOf, FRESH, SENIOR, URGENT, ago, stepsOf, lastIdx } from './ctx.jsx';
 const useHash = () => { const get = () => (location.hash.replace(/^#\/?/, '') || 'home').split('/'); const [h, setH] = useState(get); useEffect(() => { const f = () => { setH(get()); window.scrollTo(0, 0); }; window.addEventListener('hashchange', f); return () => window.removeEventListener('hashchange', f); }, []); return h; };
@@ -220,7 +221,7 @@ function ResumePdf({ arg }) {
       <div className="row" style={{ marginTop: 12 }}><button className="btn primary" onClick={dl}>⬇️ Download PDF ({pages.length} page{pages.length > 1 ? 's' : ''})</button><button className="btn primary" onClick={dlw}>⬇️ Download Word (.docx)</button></div>
       <p className="dim sm">The Word file is one column with the same colours and fonts. Sidebar, Timeline and Compact look like their Modern, Classic cousins in Word; use the PDF for the exact design.</p>
       <p className="dim sm">Found: {doc.sections.map(s => s.title).join(', ') || 'no sections'}. If a section is missing, put its heading on its own line (for example EXPERIENCE) and the preview updates.</p></div>
-      <Style o={opt} setO={setOpt} /><Content doc={doc} setDoc={setDoc} /><Preview pages={pages} w={620} /></>}
+      <Ats doc={doc} txt={txt} pages={pages} tpl={tpl} /><Style o={opt} setO={setOpt} /><Content doc={doc} setDoc={setDoc} /><Preview pages={pages} w={620} /></>}
     {a && <div className="card"><div className="row" style={{ gap: 20 }}><div className="score" style={{ '--p': a.score }}><span>{a.score}</span></div><div><h3>Resume score</h3><p className="dim sm">Out of 100. Fix the points below to raise it.</p></div></div>
       <h2>Fixes</h2><ul>{a.tips.slice(0, 8).map((t, k) => <li key={k}>{t}</li>)}</ul></div>}</>;
 }

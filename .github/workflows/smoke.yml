@@ -1,0 +1,43 @@
+name: Nightly site test
+on:
+  schedule:
+    - cron: '20 1 * * *'
+  workflow_dispatch: {}
+permissions:
+  contents: write
+  issues: write
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Install the test browser
+        run: |
+          npm install --no-save --no-audit --no-fund playwright
+          npx playwright install --with-deps chromium
+      - name: Open the live site and test it
+        id: chk
+        continue-on-error: true
+        run: node scripts/smoke.mjs | tee /tmp/monitor.txt
+      - name: Raise or clear the alert issue
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RESULT: ${{ steps.chk.outcome }}
+        run: |
+          TITLE="🚨 Padimachi nightly site test found a problem"
+          NUM=$(gh issue list --state open --search "$TITLE in:title" --json number,title -q '.[] | select(.title=="'"$TITLE"'") | .number' | head -1)
+          if [ "$RESULT" = "failure" ]; then
+            { echo "The nightly browser test of the live site found a problem:"; echo; cat /tmp/monitor.txt; echo; echo "This issue closes by itself when the next test passes."; } > /tmp/body.md
+            if [ -z "$NUM" ]; then gh issue create --title "$TITLE" --body-file /tmp/body.md; else gh issue comment "$NUM" --body-file /tmp/body.md; fi
+          elif [ -n "$NUM" ]; then gh issue close "$NUM" --comment "Recovered. The latest test passed."; fi
+      - name: Save the last result
+        continue-on-error: true
+        run: |
+          git config user.name "padimachi-smoke-bot"
+          git config user.email "noreply@users.noreply.github.com"
+          git add data/smoke.json
+          if git diff --cached --quiet; then echo "no change"; else git commit -m "Nightly site test result"; git pull -q --rebase || true; git push; fi
