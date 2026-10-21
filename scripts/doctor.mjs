@@ -26,7 +26,7 @@ export function diagnose(root = ROOT, now = Date.now()) {
   const vi = has('voice/index.json') ? J('voice/index.json') : null;
   if (vi) { let miss = 0, n = 0; for (const g of ['m', 'f']) for (const h of vi[g] || []) { n++; if (!has(`voice/${g}/${h}.mp3`)) miss++; } info.clips = n; if (miss) bad.push(`${miss} voice clips are listed but the file is missing.`); }
   if (has('sitemap.xml')) { const urls = [...rd('sitemap.xml').matchAll(/<loc>https:\/\/padimachi\.com([^<]*)<\/loc>/g)].map(m => m[1]); let miss = 0; for (const u of urls) { if (u === '/') continue; const p = u.replace(/^\//, ''); if (!(has(p) || has(path.join(p, 'index.html')))) miss++; } info.sitemap = urls.length; if (miss) bad.push(`${miss} sitemap addresses have no page.`); } else bad.push('sitemap.xml is missing.');
-  if (has('index.html')) { const html = rd('index.html'); for (const m of html.matchAll(/(?:src|href)="((?:js|css)\/[^"]+)"/g)) if (!has(m[1])) bad.push(`index.html needs ${m[1]} but it is missing.`); } else bad.push('index.html is missing.');
+  if (has('index.html')) { const html = rd('index.html'); for (const m of html.matchAll(/(?:src|href)="((?:js|css|app)\/[^"?]+)(?:\?[^"]*)?"/g)) if (!has(m[1])) bad.push(`index.html needs ${m[1]} but it is missing.`); } else bad.push('index.html is missing.');
   return { bad, warn, info };
 }
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {

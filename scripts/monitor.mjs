@@ -17,8 +17,8 @@ export async function check({ site = SITE, now = Date.now(), f = fetch, last = n
   if (!home.ok) { bad.push(`Home page does not load (status ${home.status}).`); return { bad, info }; }
   const html = await home.text();
   if (!/Padimachi/i.test(html)) bad.push('Home page loaded but does not look like Padimachi.');
-  const assets = [...html.matchAll(/(?:src|href)="((?:js|css)\/[^"]+)"/g)].map(m => m[1]);
-  if (!assets.some(a => a.startsWith('js/'))) bad.push('Home page has no app script.');
+  const assets = [...html.matchAll(/(?:src|href)="((?:js|css|app)\/[^"?]+)(?:\?[^"]*)?"/g)].map(m => m[1]);
+  if (!assets.some(a => /^(js|app)\/.+\.js$/.test(a))) bad.push('Home page has no app script.');
   for (const a of assets.slice(0, 6)) { const r = await get(site + '/' + a, f); if (!r.ok) bad.push(`Asset ${a} fails (status ${r.status}).`); }
   const jr = await get(site + '/data/jobs.json', f);
   if (!jr.ok) bad.push(`Job data does not load (status ${jr.status}).`);
