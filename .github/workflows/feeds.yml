@@ -1,0 +1,32 @@
+name: Walk-in drives and job feeds
+on:
+  schedule:
+    - cron: '35 */6 * * *'
+  workflow_dispatch: {}
+permissions:
+  contents: write
+concurrency:
+  group: jobs-update
+  cancel-in-progress: false
+jobs:
+  feeds:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Collect walk-in drive headlines
+        run: node scripts/collect-walkins.mjs
+      - name: Extra job feed (runs only if the Adzuna secrets are set)
+        env:
+          ADZUNA_APP_ID: ${{ secrets.ADZUNA_APP_ID }}
+          ADZUNA_APP_KEY: ${{ secrets.ADZUNA_APP_KEY }}
+        run: node scripts/ext-jobs.mjs
+      - name: Save
+        run: |
+          git config user.name "padimachi-jobs-bot"
+          git config user.email "noreply@users.noreply.github.com"
+          git add data
+          if git diff --cached --quiet; then echo "no change"; else git commit -m "Update walk-ins and job feeds"; git pull -q --rebase || true; git push; fi

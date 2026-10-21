@@ -5,7 +5,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 const HERE = path.dirname(fileURLToPath(import.meta.url)), ROOT = path.join(HERE, '..');
 const SITE = (process.env.SMOKE_SITE || 'https://padimachi.com').replace(/\/$/, '');
-const ROUTES = ['home', 'career', 'learn', 'learn/servicenow', 'interview', 'resumepdf', 'report', 'ctc', 'pay', 'reading', 'tracker', 'profile', 'companies', 'journey', 'toolkit', 'mentor', 'offer', 'lab', 'ladder', 'mymap', 'progress', 'play', 'mock', 'speak', 'search', 'faq', 'kb'];
+const ROUTES = ['home', 'career', 'learn', 'learn/servicenow', 'interview', 'resumepdf', 'report', 'ctc', 'pay', 'reading', 'tracker', 'walkin', 'profile', 'companies', 'journey', 'toolkit', 'mentor', 'offer', 'lab', 'ladder', 'mymap', 'progress', 'play', 'mock', 'speak', 'search', 'faq', 'kb'];
 const SAMPLE = 'Priya Sharma priya@gmail.com +91 98765 43210\nSUMMARY\nFresher keen on ServiceNow development.\nSKILLS\nServiceNow, JavaScript, SQL\nEDUCATION\nB.E. Computer Science 2025\nPROJECTS\nProject #1: Leave form\nDescription: Built a leave request form.';
 const { chromium } = await import('playwright');
 const bad = [], info = { routes: 0 };

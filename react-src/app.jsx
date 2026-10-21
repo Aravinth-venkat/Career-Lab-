@@ -13,10 +13,10 @@ import Ats from './resumeAts.jsx';
 import { Provider, useS, useJobs, skillsOf, FRESH, SENIOR, URGENT, ago, stepsOf, lastIdx } from './ctx.jsx';
 const useHash = () => { const get = () => (location.hash.replace(/^#\/?/, '') || 'home').split('/'); const [h, setH] = useState(get); useEffect(() => { const f = () => { setH(get()); window.scrollTo(0, 0); }; window.addEventListener('hashchange', f); return () => window.removeEventListener('hashchange', f); }, []); return h; };
 
-const ALL = { home: ['Home', '🏠'], career: ['Jobs', '💼'], learn: ['Learn', '📚'], practice: ['Practice', '🎮'], interview: ['Interview', '🎤'], report: ['My career report', '📊'], tracker: ['My applications', '📌'], ctc: ['CTC to in-hand', '💵'], resumepdf: ['Resume Studio', '📄'], pay: ['Pay compass', '💰'], reading: ['Reading', '📚'], profile: ['Profile', '👤'], companies: ['Companies', '🏢'], journey: ['Career journey', '🧭'], lab: ['Coding lab', '💻'], ladder: ['Career ladder', '🪜'], mentor: ['Career mentor', '🧑‍🏫'], mock: ['Mock interview', '🎙️'], mymap: ['My journey map', '🗺️'], play: ['Practice games', '🎮'], progress: ['Save progress', '💾'], toolkit: ['Career toolkit', '🧰'], speak: ['Speaking practice', '🗣️'], offer: ['Offer helper', '🤝'] };
+const ALL = { home: ['Home', '🏠'], career: ['Jobs', '💼'], learn: ['Learn', '📚'], practice: ['Practice', '🎮'], interview: ['Interview', '🎤'], report: ['My career report', '📊'], tracker: ['My applications', '📌'], ctc: ['CTC to in-hand', '💵'], resumepdf: ['Resume Studio', '📄'], pay: ['Pay compass', '💰'], reading: ['Reading', '📚'], profile: ['Profile', '👤'], companies: ['Companies', '🏢'], walkin: ['Walk-in drives', '🚶'], journey: ['Career journey', '🧭'], lab: ['Coding lab', '💻'], ladder: ['Career ladder', '🪜'], mentor: ['Career mentor', '🧑‍🏫'], mock: ['Mock interview', '🎙️'], mymap: ['My journey map', '🗺️'], play: ['Practice games', '🎮'], progress: ['Save progress', '💾'], toolkit: ['Career toolkit', '🧰'], speak: ['Speaking practice', '🗣️'], offer: ['Offer helper', '🤝'] };
 const PRIME = { new: ['home', 'career', 'learn', 'interview', 'report'], fresher: ['home', 'career', 'learn', 'interview', 'resumepdf'], exp: ['home', 'career', 'report', 'interview', 'ctc', 'tracker'], senior: ['home', 'career', 'ctc', 'tracker', 'interview'] };
 const TABK = { new: ['home', 'career', 'learn', 'interview', 'report'], fresher: ['home', 'career', 'learn', 'interview', 'resumepdf'], exp: ['home', 'career', 'report', 'interview', 'ctc'], senior: ['home', 'career', 'ctc', 'tracker', 'interview'] };
-const GROUPS = [['Find work', ['career', 'companies', 'tracker', 'journey']], ['Prepare', ['learn', 'interview', 'mock', 'speak', 'play', 'lab', 'resumepdf', 'report']], ['Money and offers', ['ctc', 'pay', 'offer']], ['Grow', ['ladder', 'mentor', 'mymap', 'toolkit', 'reading']], ['You', ['progress', 'profile']]];
+const GROUPS = [['Find work', ['career', 'walkin', 'companies', 'tracker', 'journey']], ['Prepare', ['learn', 'interview', 'mock', 'speak', 'play', 'lab', 'resumepdf', 'report']], ['Money and offers', ['ctc', 'pay', 'offer']], ['Grow', ['ladder', 'mentor', 'mymap', 'toolkit', 'reading']], ['You', ['progress', 'profile']]];
 const MODEL = { new: '', fresher: 'Fresher view', exp: 'Experienced view', senior: 'Senior view' };
 const NavLink = ({ k, cur }) => <a className={'nav' + (cur === k ? ' on' : '')} href={'#/' + k}><span>{ALL[k][1]}</span><span>{ALL[k][0]}</span></a>;
 
@@ -55,6 +55,20 @@ function ResumeCard({ slim }) {
   return <section className="card rcard"><a href="#/resumepdf" className="rthumb" aria-label="Open Resume Studio"><Preview pages={[pages[0]]} w={150} /></a>
     <div><span className="tag alt">Resume Studio</span><h3 style={{ margin: '8px 0 6px' }}>Your resume is ready to polish</h3><p className="dim sm">9 templates, your colours, and a download as PDF or Word. Most hiring software reads a clean one-column resume best.</p>
       <div className="row"><a className="btn primary" href="#/resumepdf">Choose a template</a>{!slim && <a className="btn" href="#/resumepdf">⬇️ Download</a>}</div></div></section>;
+}
+const useWalkins = () => { const [w, setW] = useState(null); useEffect(() => { if (location.protocol === 'file:') return setW([]); fetch('data/walkins.json', { cache: 'no-cache' }).then(r => r.ok ? r.json() : Promise.reject()).then(d => setW(d.list || [])).catch(() => setW([])); }, []); return w; };
+function Walkin() {
+  const w = useWalkins(), { S } = useS(); const [city, setCity] = useState(''), [n, setN] = useState(10);
+  const cities = useMemo(() => { const m = {}; (w || []).forEach(x => { if (x.city) m[x.city] = (m[x.city] || 0) + 1; }); return Object.entries(m).sort((a, b) => b[1] - a[1]); }, [w]);
+  const list = (w || []).filter(x => !city || x.city === city);
+  return <><h1>🚶 Walk-in drives</h1><p className="dim">Walk-in interviews and hiring drives reported in the news and job feeds, city by city. Newest first. Each card opens the original source.</p>
+    <div className="note"><b>Stay safe.</b> A real walk-in never asks you to pay a registration fee, a deposit or training money. Check the date, time and venue on the company's own page before you travel, because drives can be rescheduled.</div>
+    <div className="card"><div className="row"><button className={'chip' + (!city ? ' on' : '')} onClick={() => { setCity(''); setN(10); }}>All cities</button>{cities.map(([c, k]) => <button key={c} className={'chip' + (city === c ? ' on' : '')} onClick={() => { setCity(c); setN(10); }}>{c} ({k})</button>)}</div></div>
+    {w === null && <div className="card">Loading…</div>}
+    {w && !list.length && <div className="card"><p>No walk-in drives listed {city ? 'for ' + city + ' ' : ''}right now. The list refreshes every 6 hours.</p><a className="btn" href="#/career">See job openings instead</a></div>}
+    {list.slice(0, n).map(x => <article className="card job" key={x.id}><div className="row" style={{ justifyContent: 'space-between', alignItems: 'flex-start' }}><h3>{x.title}</h3>{x.city && <span className="tag">📍 {x.city}</span>}</div><p className="meta">{x.source} · {ago(x.t)}{x.kind === 'job' ? ' · job listing' : ' · news'}</p><div className="row"><a className="btn sm primary" href={x.link} target="_blank" rel="noopener noreferrer">Open source ↗</a></div></article>)}
+    {list.length > n && <div className="row"><button className="btn" onClick={() => setN(n + 10)}>Show more</button></div>}
+    <p className="dim sm">Headlines and links only. We do not copy articles. Spotted a wrong or expired drive? Tell us on Telegram.</p></>;
 }
 /* ---------- Home ---------- */
 const QA = { fresher: [['🌱 Fresher jobs', '#/career'], ['🎤 Practise', '#/interview'], ['📚 Learn', '#/learn']], exp: [['💼 Matched jobs', '#/career'], ['📊 My report', '#/report'], ['💵 Check CTC', '#/ctc']], senior: [['💼 Matched roles', '#/career'], ['💵 Compare offers', '#/ctc'], ['📌 My applications', '#/tracker']] };
@@ -108,7 +122,7 @@ function Jobs() {
   const saved = id => (S.apps || []).some(x => x.id === 'j:' + id);
   return <>
     <h1>💼 Job openings</h1>
-    <p className="dim">Every job links to the company's own page. Re-checked every 3 hours, closed jobs removed. <a href="https://t.me/padimachi_jobs" target="_blank" rel="noreferrer">Get new jobs on Telegram</a></p>
+    <p className="dim">Jobs from company career pages and trusted job feeds, with the original posting one tap away. Company pages are re-checked every 3 hours and closed jobs are removed. <a href="#/walkin">🚶 See walk-in drives</a> · <a href="https://t.me/padimachi_jobs" target="_blank" rel="noreferrer">Get new jobs on Telegram</a></p>
     <div className="card"><div className="row"><input style={{ flex: 1, minWidth: 200 }} placeholder="Search a role or company" value={q} onChange={e => { setQ(e.target.value); setN(6); }} />
       <select style={{ width: 'auto' }} value={city} onChange={e => { setCity(e.target.value); setN(6); }}><option value="">All cities</option>{cities.map(c => <option key={c}>{c}</option>)}</select></div>
       <div className="row" style={{ marginTop: 12 }}>{[['', 'All'], ...(mode === 'exp' || mode === 'senior' ? [] : [['fresh', '🌱 Fresher friendly']]), ['urgent', '⚡ Urgent'], ['week', '🆕 This week']].map(([k, l]) => <button key={k} className={'chip' + (f === k ? ' on' : '')} onClick={() => { setF(k); setN(6); }}>{l}</button>)}</div></div>
@@ -116,10 +130,10 @@ function Jobs() {
     {!jobs ? <div className="card">Loading jobs…</div> : <p className="dim sm">{list.length.toLocaleString('en-IN')} openings</p>}
     {list.slice(0, n).map(j => <article className="card job" key={j.id}>
       <div className="row" style={{ justifyContent: 'space-between', alignItems: 'flex-start' }}><h3>{j.t}</h3>{j.pct > 0 && <span className="pct">{j.pct}% match</span>}</div>
-      <p className="meta"><b>{j.c}</b> · 📍 {j.l || 'India'} · {ago(j.p || j.s)}{j.sa ? ' · ₹' + j.sa[0] + '–' + j.sa[1] + ' LPA' : ''}</p>
+      <p className="meta"><b>{j.c}</b> · 📍 {j.l || 'India'} · {ago(j.p || j.s)}{j.sa ? ' · ₹' + j.sa[0] + '–' + j.sa[1] + ' LPA' : ''}{j.src && <> · via <a href="https://www.adzuna.in" target="_blank" rel="noreferrer">Adzuna</a></>}</p>
       {j.hit.length > 0 && <p className="sm">✅ <b>Why it fits:</b> your resume shows {j.hit.slice(0, 3).join(', ')}.</p>}
       <Prep j={j} sk={sk} />
-      <div className="row"><a className="btn sm primary" href={j.a || j.u} target="_blank" rel="noopener noreferrer" onClick={() => set({ pa: { id: j.id, co: j.c, role: j.t, link: j.a || j.u, t: Date.now() } })}>Apply on company page ↗</a><button className="btn sm" onClick={() => save_(j)}>{saved(j.id) ? '✓ Saved' : '☆ Save'}</button></div>
+      <div className="row"><a className="btn sm primary" href={j.a || j.u} target="_blank" rel="noopener noreferrer" onClick={() => set({ pa: { id: j.id, co: j.c, role: j.t, link: j.a || j.u, t: Date.now() } })}>{j.src ? 'Open job ↗' : 'Apply on company page ↗'}</a><button className="btn sm" onClick={() => save_(j)}>{saved(j.id) ? '✓ Saved' : '☆ Save'}</button></div>
     </article>)}
     {list.length > n && <div className="row"><button className="btn" onClick={() => setN(n + 10)}>Show more</button></div>}
   </>;
@@ -292,7 +306,7 @@ function Profile() {
 
 function Router() {
   const [r, a] = useHash(); let v;
-  switch (r) { case 'home': v = <Home />; break; case 'career': case 'openings': v = <Jobs />; break; case 'learn': v = <Learn arg={a} />; break; case 'topic': v = <Topic id={a} />; break; case 'interview': case 'practice': v = <Interview arg={a} />; break; case 'resumepdf': case 'resume': v = <ResumePdf arg={a} />; break; case 'report': v = <Report />; break; case 'ctc': v = <Ctc />; break; case 'pay': v = <Pay />; break; case 'reading': v = <Reading />; break; case 'tracker': v = <Tracker />; break; case 'profile': v = <Profile />; break; default: { const X = EXTRA[r]; v = X ? <X arg={a} /> : <Home />; } }
+  switch (r) { case 'home': v = <Home />; break; case 'career': case 'openings': v = <Jobs />; break; case 'learn': v = <Learn arg={a} />; break; case 'topic': v = <Topic id={a} />; break; case 'interview': case 'practice': v = <Interview arg={a} />; break; case 'resumepdf': case 'resume': v = <ResumePdf arg={a} />; break; case 'report': v = <Report />; break; case 'ctc': v = <Ctc />; break; case 'pay': v = <Pay />; break; case 'reading': v = <Reading />; break; case 'tracker': v = <Tracker />; break; case 'walkin': v = <Walkin />; break; case 'profile': v = <Profile />; break; default: { const X = EXTRA[r]; v = X ? <X arg={a} /> : <Home />; } }
   return <Shell route={r === 'topic' ? 'learn' : r}>{v}<DidApply /></Shell>;
 }
 createRoot(document.getElementById('root')).render(<Provider><Router /></Provider>);

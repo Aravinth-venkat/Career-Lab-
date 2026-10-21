@@ -11,7 +11,7 @@ export function Provider({ children }) {
 
 /* ---------- data ---------- */
 let JOBS = null;
-export const useJobs = () => { const [j, setJ] = useState(JOBS); useEffect(() => { if (JOBS) return; const fin = a => { JOBS = a; setJ(a); }; if (location.protocol === 'file:' || window.__JOBS__) return fin(window.__JOBS__ || []); fetch('data/jobs.json', { cache: 'no-cache' }).then(r => r.ok ? r.json() : Promise.reject()).then(d => fin((d.jobs || []).filter(x => !x.x))).catch(() => fin([])); }, []); return j; };
+export const useJobs = () => { const [j, setJ] = useState(JOBS); useEffect(() => { if (JOBS) return; const fin = a => { JOBS = a; setJ(a); }; if (location.protocol === 'file:' || window.__JOBS__) return fin(window.__JOBS__ || []); Promise.all([fetch('data/jobs.json', { cache: 'no-cache' }).then(r => r.ok ? r.json() : Promise.reject()), fetch('data/ext-jobs.json', { cache: 'no-cache' }).then(r => r.ok ? r.json() : { jobs: [] }).catch(() => ({ jobs: [] }))]).then(([d, e]) => { const own = (d.jobs || []).filter(x => !x.x), seen = new Set(own.map(x => (x.c + '|' + x.t).toLowerCase())); fin([...own, ...(e.jobs || []).filter(x => !seen.has((x.c + '|' + x.t).toLowerCase()))]); }).catch(() => fin([])); }, []); return j; };
 export const skillsOf = S => S.resume ? C.extractSkills(S.resume, D.SKILLS) : [];
 export const FRESH = /fresher|trainee|intern\b|internship|entry[- ]level|graduate|campus|0\s*(?:-|to)\s*[12]\s*(?:years|yrs)/i; export const SENIOR = /\b(senior|sr\.?|lead|manager|principal|architect|head|director|vp)\b/i; export const URGENT = /urgent|immediate|asap|walk[- ]?in|hiring now/i;
 export const ago = ts => { const d = Math.max(0, Math.round((Date.now() - ts) / 864e5)); return d < 1 ? 'today' : d === 1 ? 'yesterday' : d + ' days ago'; };
