@@ -1,1 +1,1 @@
-{"updated":1792650883124,"boards":59,"boardsOk":59,"skipped":0,"failed":[],"discovered":0,"described":27,"verified":12,"expiredNow":0,"withoutText":2,"probed":0,"open":1621,"closed":534,"alert":null}
+{"updated":1792669704380,"boards":59,"boardsOk":58,"skipped":0,"failed":["lv:sophos 0"],"discovered":0,"described":45,"verified":30,"expiredNow":0,"withoutText":2,"probed":0,"open":1640,"closed":529,"alert":null}
