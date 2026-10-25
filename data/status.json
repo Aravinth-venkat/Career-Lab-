@@ -1,1 +1,1 @@
-{"updated":1792911101406,"boards":59,"boardsOk":59,"skipped":0,"failed":[],"discovered":0,"described":2,"verified":12,"expiredNow":0,"withoutText":2,"probed":0,"open":1629,"closed":516,"alert":null}
+{"updated":1792927376983,"boards":64,"boardsOk":63,"skipped":0,"failed":["wk:tiger-analytics 429"],"discovered":5,"described":117,"verified":9,"expiredNow":0,"withoutText":89,"probed":260,"open":1853,"closed":516,"alert":null}
