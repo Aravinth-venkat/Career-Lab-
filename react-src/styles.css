@@ -64,3 +64,7 @@ textarea{min-height:220px;resize:vertical}label{display:grid;gap:6px;font-weight
 .okn{border-left:4px solid #22c55e}
 @media(max-width:560px){.rcard{grid-template-columns:96px 1fr;gap:12px}}
 .mnote{margin:2px 4px 6px;font-size:.9rem;color:var(--dim)}.mnote a{font-weight:700}
+.scam-high{border-left:4px solid #d33}.scam-mid{border-left:4px solid #e90}.scam-low{border-left:4px solid #2a8}
+.inp{font:inherit;padding:10px;border:1px solid var(--line,#ccc);border-radius:10px;background:var(--card,#fff);color:inherit;box-sizing:border-box}
+.bar{height:8px;border-radius:6px;background:rgba(128,128,128,.25);margin-top:8px;overflow:hidden}.bar i{display:block;height:100%;background:#2a8}
+ol.steps{padding-left:1.2rem}ol.steps li{margin:6px 0}

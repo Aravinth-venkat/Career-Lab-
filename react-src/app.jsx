@@ -13,10 +13,10 @@ import Ats from './resumeAts.jsx';
 import { Provider, useS, useJobs, skillsOf, FRESH, SENIOR, URGENT, ago, stepsOf, lastIdx } from './ctx.jsx';
 const useHash = () => { const get = () => (location.hash.replace(/^#\/?/, '') || 'home').split('/'); const [h, setH] = useState(get); useEffect(() => { const f = () => { setH(get()); window.scrollTo(0, 0); }; window.addEventListener('hashchange', f); return () => window.removeEventListener('hashchange', f); }, []); return h; };
 
-const ALL = { home: ['Home', '🏠'], career: ['Jobs', '💼'], learn: ['Learn', '📚'], practice: ['Practice', '🎮'], interview: ['Interview', '🎤'], report: ['My career report', '📊'], tracker: ['My applications', '📌'], ctc: ['CTC to in-hand', '💵'], resumepdf: ['Resume Studio', '📄'], pay: ['Pay compass', '💰'], reading: ['Reading', '📚'], profile: ['Profile', '👤'], companies: ['Companies', '🏢'], walkin: ['Walk-in drives', '🚶'], journey: ['Career journey', '🧭'], lab: ['Coding lab', '💻'], ladder: ['Career ladder', '🪜'], mentor: ['Career mentor', '🧑‍🏫'], mock: ['Mock interview', '🎙️'], mymap: ['My journey map', '🗺️'], play: ['Practice games', '🎮'], progress: ['Save progress', '💾'], toolkit: ['Career toolkit', '🧰'], speak: ['Speaking practice', '🗣️'], offer: ['Offer helper', '🤝'] };
+const ALL = { home: ['Home', '🏠'], career: ['Jobs', '💼'], learn: ['Learn', '📚'], practice: ['Practice', '🎮'], interview: ['Interview', '🎤'], report: ['My career report', '📊'], tracker: ['My applications', '📌'], ctc: ['CTC to in-hand', '💵'], resumepdf: ['Resume Studio', '📄'], pay: ['Pay compass', '💰'], reading: ['Reading', '📚'], profile: ['Profile', '👤'], companies: ['Companies', '🏢'], walkin: ['Walk-in drives', '🚶'], scam: ['Is this job real?', '🛡️'], plan: ['First job in 30 days', '🗓️'], cities: ['Jobs by city', '🏙️'], journey: ['Career journey', '🧭'], lab: ['Coding lab', '💻'], ladder: ['Career ladder', '🪜'], mentor: ['Career mentor', '🧑‍🏫'], mock: ['Mock interview', '🎙️'], mymap: ['My journey map', '🗺️'], play: ['Practice games', '🎮'], progress: ['Save progress', '💾'], toolkit: ['Career toolkit', '🧰'], speak: ['Speaking practice', '🗣️'], offer: ['Offer helper', '🤝'] };
 const PRIME = { new: ['home', 'career', 'learn', 'interview', 'report'], fresher: ['home', 'career', 'learn', 'interview', 'resumepdf'], exp: ['home', 'career', 'report', 'interview', 'ctc', 'tracker'], senior: ['home', 'career', 'ctc', 'tracker', 'interview'] };
 const TABK = { new: ['home', 'career', 'learn', 'interview', 'report'], fresher: ['home', 'career', 'learn', 'interview', 'resumepdf'], exp: ['home', 'career', 'report', 'interview', 'ctc'], senior: ['home', 'career', 'ctc', 'tracker', 'interview'] };
-const GROUPS = [['Find work', ['career', 'walkin', 'companies', 'tracker', 'journey']], ['Prepare', ['learn', 'interview', 'mock', 'speak', 'play', 'lab', 'resumepdf', 'report']], ['Money and offers', ['ctc', 'pay', 'offer']], ['Grow', ['ladder', 'mentor', 'mymap', 'toolkit', 'reading']], ['You', ['progress', 'profile']]];
+const GROUPS = [['Find work', ['career', 'walkin', 'cities', 'companies', 'tracker', 'journey', 'scam', 'plan']], ['Prepare', ['learn', 'interview', 'mock', 'speak', 'play', 'lab', 'resumepdf', 'report']], ['Money and offers', ['ctc', 'pay', 'offer']], ['Grow', ['ladder', 'mentor', 'mymap', 'toolkit', 'reading']], ['You', ['progress', 'profile']]];
 const MODEL = { new: '', fresher: 'Fresher view', exp: 'Experienced view', senior: 'Senior view' };
 const NavLink = ({ k, cur }) => <a className={'nav' + (cur === k ? ' on' : '')} href={'#/' + k}><span>{ALL[k][1]}</span><span>{ALL[k][0]}</span></a>;
 
@@ -201,11 +201,13 @@ function Topic({ id }) {
     {tab === 'terms' && <div className="grid">{t.facts.map(f => <div className="card" key={f.id}><b>{f.t}</b><p className="dim sm">{f.d}</p></div>)}</div>}
     {tab === 'quiz' && <Quiz qs={t.qs} />}
     {tab === 'scen' && <div className="card"><span className="tag alt">Real-time scenario</span><p style={{ fontSize: '1.1rem' }}>{(t.scen || [])[0]}</p>{!rev ? <button className="btn primary" onClick={() => setRev(true)}>Show the correct approach</button> : <ol>{(t.scen || []).slice(1).map((s, i) => <li key={i}>{s}</li>)}</ol>}</div>}
+  <Clear id={t.id} />
   <TopicRelated t={t} />
   </>;
 }
 
 import Interview from './interviewPage.jsx';
+import { ScamCheck, Plan30, Cities, Clear } from './newPages.jsx';
 import HomeDash from './homeDash.jsx';
 /* ---------- Resume and report ---------- */
 function Preview({ pages, w }) {
@@ -306,7 +308,7 @@ function Profile() {
 
 function Router() {
   const [r, a] = useHash(); let v;
-  switch (r) { case 'home': v = <Home />; break; case 'career': case 'openings': v = <Jobs />; break; case 'learn': v = <Learn arg={a} />; break; case 'topic': v = <Topic id={a} />; break; case 'interview': case 'practice': v = <Interview arg={a} />; break; case 'resumepdf': case 'resume': v = <ResumePdf arg={a} />; break; case 'report': v = <Report />; break; case 'ctc': v = <Ctc />; break; case 'pay': v = <Pay />; break; case 'reading': v = <Reading />; break; case 'tracker': v = <Tracker />; break; case 'walkin': v = <Walkin />; break; case 'profile': v = <Profile />; break; default: { const X = EXTRA[r]; v = X ? <X arg={a} /> : <Home />; } }
+  switch (r) { case 'home': v = <Home />; break; case 'career': case 'openings': v = <Jobs />; break; case 'learn': v = <Learn arg={a} />; break; case 'topic': v = <Topic id={a} />; break; case 'interview': case 'practice': v = <Interview arg={a} />; break; case 'resumepdf': case 'resume': v = <ResumePdf arg={a} />; break; case 'report': v = <Report />; break; case 'ctc': v = <Ctc />; break; case 'pay': v = <Pay />; break; case 'reading': v = <Reading />; break; case 'tracker': v = <Tracker />; break; case 'walkin': v = <Walkin />; break; case 'scam': v = <ScamCheck />; break; case 'plan': v = <Plan30 />; break; case 'cities': v = <Cities arg={a} />; break; case 'profile': v = <Profile />; break; default: { const X = EXTRA[r]; v = X ? <X arg={a} /> : <Home />; } }
   return <Shell route={r === 'topic' ? 'learn' : r}>{v}<DidApply /></Shell>;
 }
 createRoot(document.getElementById('root')).render(<Provider><Router /></Provider>);
