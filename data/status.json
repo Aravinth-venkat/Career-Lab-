@@ -1,1 +1,1 @@
-{"updated":1793708502062,"boards":64,"boardsOk":64,"skipped":0,"failed":[],"discovered":0,"described":41,"verified":9,"expiredNow":0,"withoutText":5,"probed":0,"open":1920,"closed":838,"alert":null}
+{"updated":1793725240835,"boards":64,"boardsOk":61,"skipped":0,"failed":["gh:zscaler 0","gh:stripe 0","gh:okta 0"],"discovered":0,"described":12,"verified":29,"expiredNow":0,"withoutText":5,"probed":0,"open":1914,"closed":831,"alert":null}
