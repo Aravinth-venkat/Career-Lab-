@@ -82,3 +82,8 @@ input:focus-visible,textarea:focus-visible,select:focus-visible{outline:3px soli
 textarea{resize:vertical;line-height:1.5}
 .card h3{overflow-wrap:anywhere}
 main p,main li{overflow-wrap:break-word}
+
+/* Light theme contrast fixes */
+[data-theme=light]{--acc:#0b7a70;--acc2:#4338ca;--dim:#4a5878;--warn:#a85a00}
+[data-theme=light] .btn.primary,[data-theme=light] .chip.on,[data-theme=light] .jt.on,[data-theme=light] .d-n,[data-theme=light] .wn,[data-theme=light] .wcenter{color:#fff}
+[data-theme=light] .btn.primary{box-shadow:0 8px 22px rgba(67,56,202,.22)}
