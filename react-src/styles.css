@@ -68,3 +68,17 @@ textarea{min-height:220px;resize:vertical}label{display:grid;gap:6px;font-weight
 .inp{font:inherit;padding:10px;border:1px solid var(--line,#ccc);border-radius:10px;background:var(--card,#fff);color:inherit;box-sizing:border-box}
 .bar{height:8px;border-radius:6px;background:rgba(128,128,128,.25);margin-top:8px;overflow:hidden}.bar i{display:block;height:100%;background:#2a8}
 ol.steps{padding-left:1.2rem}ol.steps li{margin:6px 0}
+
+/* Polish pass: spacing, tap targets, keyboard focus, reduced motion */
+.grid>.card{margin:0}
+label.row{flex-wrap:nowrap;align-items:flex-start;min-height:44px;padding:8px 0}
+label.row>input[type=checkbox]{width:22px;height:22px;flex:none;padding:0;margin:1px 0 0;accent-color:var(--acc)}
+label.row>span{min-width:0;flex:1 1 auto}
+label.row>a{flex:none;align-self:center;padding:8px 4px}
+a:focus-visible,button:focus-visible,.chip:focus-visible,summary:focus-visible,[tabindex]:focus-visible{outline:3px solid var(--acc);outline-offset:3px;border-radius:10px}
+input:focus-visible,textarea:focus-visible,select:focus-visible{outline:3px solid var(--acc);outline-offset:1px}
+@media (prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important;scroll-behavior:auto!important}}
+@media (max-width:600px){.btn,.chip{min-height:44px}a.btn{display:inline-flex;align-items:center;justify-content:center}}
+textarea{resize:vertical;line-height:1.5}
+.card h3{overflow-wrap:anywhere}
+main p,main li{overflow-wrap:break-word}
