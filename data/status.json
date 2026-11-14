@@ -1,1 +1,1 @@
-{"updated":1794598727810,"boards":65,"boardsOk":65,"skipped":0,"failed":[],"discovered":0,"described":1,"verified":35,"expiredNow":0,"withoutText":2,"probed":0,"open":1863,"closed":616,"alert":null}
+{"updated":1794616098057,"boards":65,"boardsOk":62,"skipped":0,"failed":["wd:adobe~wd5~external_experienced 521","wd:nvidia~wd5~NVIDIAExternalCareerSite 521","wd:cisco~wd5~Cisco_Careers 521"],"discovered":0,"described":2,"verified":0,"expiredNow":0,"withoutText":2,"probed":0,"open":1805,"closed":669,"alert":null}
