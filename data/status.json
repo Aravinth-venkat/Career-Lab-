@@ -1,1 +1,1 @@
-{"updated":1794674628970,"boards":65,"boardsOk":60,"skipped":0,"failed":["wd:nvidia~wd5~NVIDIAExternalCareerSite 0","wd:intel~wd1~External 0","wd:paypal~wd1~jobs 0","wd:wf~wd1~WellsFargoJobs 0","wd:fmr~wd1~FidelityCareers 0"],"discovered":0,"described":3,"verified":20,"expiredNow":0,"withoutText":2,"probed":0,"open":1858,"closed":617,"alert":null}
+{"updated":1794679097408,"boards":65,"boardsOk":64,"skipped":0,"failed":["wd:intel~wd1~External 0"],"discovered":0,"described":1,"verified":19,"expiredNow":0,"withoutText":2,"probed":0,"open":1858,"closed":618,"alert":null}
